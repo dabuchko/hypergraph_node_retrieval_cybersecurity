@@ -7,7 +7,6 @@ import datetime
 import re
 import copy
 from time import time
-import multiprocess as mp
 
 import torch
 import torch_geometric
@@ -72,10 +71,10 @@ class HyperparameterSetGenerator():
         with self._lock:
             if self._precomputed==None:
                 # return randomly sampled combination
-                comb = [list() for _ in range(len(self._hyperparam_ranges))]
+                comb = [dict() for _ in range(len(self._hyperparam_ranges))]
                 for hr_n, hr in enumerate(self._hyperparam_ranges):
                     for key in hr.keys():
-                        comb[hr_n][key] = random.choice(self._hyperparam_ranges[key])
+                        comb[hr_n][key] = random.choice(hr[key])
                 return comb
             else:
                 self._counter += 1
@@ -136,19 +135,24 @@ def main(args: argparse.ArgumentParser):
     hp_generator = HyperparameterSetGenerator(*hp_ranges_loaded)
 
 
-    def run(hp):
-        embedding_hp_set, method_hp_set = hp
+    best_pr_auc = 0
+    best_hyperparameters = None
+    global_start = int(time())
+    val_y = data.labels[data.val_mask]
+
+    for embedding_hp_set, method_hp_set in hp_generator:
         print("started")
         local_start = int(time())
         # compute embeddings if any
         if embedding_set:
             if args.embedding=="Node2Vec":
-                embedding_hp_set["edge_index"] = data.incidence_graph().edge_index
-                embedding_hp_set["num_nodes"] = data.num_nodes + data.num_edges
+                embedding_hp_set["edge_index"] = data.incidence_graph().edge_index.long()
+                embedding_hp_set["num_nodes"] = int(embedding_hp_set["edge_index"].max()) + 1
+                breakpoint()
                 node2vec = EMBEDDING_METHODS[args.embedding](**embedding_hp_set).to(device)
                 del embedding_hp_set["edge_index"]
                 del embedding_hp_set["num_nodes"]
-                loader = node2vec.loader(batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers)
+                loader = node2vec.loader(batch_size=args.batch_size, shuffle=True, num_workers=3)
                 optimizer = torch.optim.SparseAdam(list(node2vec.parameters()), lr=args.lr)
                 node2vec.train()
                 patience = args.patience
@@ -201,10 +205,10 @@ def main(args: argparse.ArgumentParser):
                     graph = data.incidence_graph()
                     edge_index = data.edge_index
                     edge_weight = data.weight_matrix
-                    y = data.hypergraph_nodes.y
-                    train_mask = data.hypergraph_nodes.train_mask
-                    val_mask = data.hypergraph_nodes.val_mask,
-                    test_mask = data.hypergraph_nodes.test_mask
+                    y = torch.cat([data.hypergraph_nodes.y, torch.zeros((data.num_edges))], 0)
+                    train_mask = torch.cat([data.hypergraph_nodes.train_mask, torch.zeros((data.num_edges))], 0)
+                    val_mask = torch.cat([data.hypergraph_nodes.val_mask, torch.zeros((data.num_edges))], 0)
+                    test_mask = torch.cat([data.hypergraph_nodes.test_mask, torch.zeros((data.num_edges))], 0)
                 else:
                     graph = data.clique_graph()
                     edge_index = data.edge_index
@@ -213,41 +217,53 @@ def main(args: argparse.ArgumentParser):
                     train_mask = data.train_mask
                     val_mask = data.val_mask,
                     test_mask = data.test_mask
+                method_hp_set["out_channels"] = 1
+                model = GRAPH_METHODS[args.graph_based](**method_hp_set)
+                
             elif args.graph_based in HYPERGRAPH_METHODS:
                 pass
+
+            last_loss = float("inf")
+            patience = args.patience
+            loss_fn = torch.nn.BCEWithLogitsLoss()
+            optimizer = torch.optim.Adam(model.parameters(), 0.01)
+            while patience>=0:
+                model.train()
+                optimizer.zero_grad()
+                preds = model(x, edge_index, edge_weight=edge_weight)
+                loss = loss_fn(preds[train_mask], y[train_mask])
+                loss.backward()
+                optimizer.step()
+                loss = loss_fn(preds[val_mask], y[train_mask])
+                if last_loss-loss<args.delta:
+                    patience-=1
+                else:
+                    patience = args.patience
+            preds = preds.detach()
         local_end = int(time())
 
-        return preds, embedding_end-local_start, local_end-local_start, (embedding_hp_set, method_hp_set)
-
-
-    best_pr_auc = 0
-    best_hyperparameters = None
-    global_start = int(time())
-    val_y = data.labels[data.val_mask]
-
-    with mp.Pool(args.num_workers) as pool:
-        for preds, embedding_time, total_time, (embedding_hp_set, method_hp_set) in pool.imap_unordered(run, hp_generator, chunksize=1):
-            if int(time())-global_start>args.time_limit:
-                pool.terminate()
-                break
-            # evaluate predictions using Accuracy, ROC-AUC and PR-AUC metrics
-            threshold = data.labels[data.train_mask].float().mean()
-            accuracy = (val_y==(preds>threshold)).float().mean()
-            roc_auc = AUROC('binary')(preds, val_y)
-            pr_curve = PrecisionRecallCurve(task="binary")
-            precision, recall, _ = pr_curve(preds, val_y)
-            pr_auc = auc(recall, precision)
-            # save results
-            os.makedirs(args.logdir, exist_ok=True) # it is important to create directory not earlier than at least one iteration succeeded
-            with open(args.logdir + "/results.csv", "a+") as f:
-                f.write(f"{accuracy},{roc_auc},{pr_auc},{embedding_time},{total_time},{embedding_hp_set},{method_hp_set}\n")
-            if pr_auc>best_pr_auc:
-                best_pr_auc = pr_auc
-                best_hyperparameters = (embedding_hp_set, method_hp_set)
-                # save best predictions
-                if os.path.isfile(args.logdir+"/preds.pt"):
-                    os.remove(args.logdir+"/preds.pt")
-                torch.save(preds, args.logdir+"/preds.pt")
+        if int(time())-global_start>args.time_limit:
+            break
+        # evaluate predictions using Accuracy, ROC-AUC and PR-AUC metrics
+        threshold = data.labels[data.train_mask].float().mean()
+        accuracy = (val_y==(preds>threshold)).float().mean()
+        roc_auc = AUROC('binary')(preds, val_y)
+        pr_curve = PrecisionRecallCurve(task="binary")
+        precision, recall, _ = pr_curve(preds, val_y)
+        pr_auc = auc(recall, precision)
+        # save results
+        os.makedirs(args.logdir, exist_ok=True) # it is important to create directory not earlier than at least one iteration succeeded
+        with open(args.logdir + "/results.csv", "a+") as f:
+            embedding_time = embedding_end - local_start
+            total_time = local_end - local_start
+            f.write(f"{accuracy},{roc_auc},{pr_auc},{embedding_time},{total_time},{embedding_hp_set},{method_hp_set}\n")
+        if pr_auc>best_pr_auc:
+            best_pr_auc = pr_auc
+            best_hyperparameters = (embedding_hp_set, method_hp_set)
+            # save best predictions
+            if os.path.isfile(args.logdir+"/preds.pt"):
+                os.remove(args.logdir+"/preds.pt")
+            torch.save(preds, args.logdir+"/preds.pt")
     print(best_hyperparameters)
 
 
@@ -271,8 +287,6 @@ if __name__ == '__main__':
     parser.add_argument("--seed", default=42, type=int, help="Random seed.")
     parser.add_argument("--threads", default=1, type=int, help="Maximum number of threads to use.")
     parser.add_argument("--batch_size", default=512, type=int, help="Batch size.")
-    parser.add_argument("--num_workers", default=4, type=int, help="Number of workers that should be" \
-    " used by dataloaders.")
     parser.add_argument("--lr", default=0.01, type=float, help="Learning rate for Adam optimizer.")
     parser.add_argument("--hyperparam_ranges", default="hyperparam_ranges.json",
                         type=str, help="Path to the JSON file containing hyperparameter ranges" \
