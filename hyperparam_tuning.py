@@ -203,20 +203,20 @@ def main(args: argparse.ArgumentParser):
             if args.graph_based in GRAPH_METHODS:
                 if args.graph_representation=="incidence":
                     graph = data.incidence_graph()
-                    edge_index = data.edge_index
-                    edge_weight = data.weight_matrix
-                    y = torch.cat([data.hypergraph_nodes.y, torch.zeros((data.num_edges))], 0)
-                    train_mask = torch.cat([data.hypergraph_nodes.train_mask, torch.zeros((data.num_edges))], 0)
-                    val_mask = torch.cat([data.hypergraph_nodes.val_mask, torch.zeros((data.num_edges))], 0)
-                    test_mask = torch.cat([data.hypergraph_nodes.test_mask, torch.zeros((data.num_edges))], 0)
+                    edge_index = graph.edge_index
+                    edge_weight = graph.edge_weight
+                    y = torch.cat([graph.hypergraph_nodes.y, torch.zeros((graph.num_edges))], 0)
+                    train_mask = torch.cat([graph.hypergraph_nodes.train_mask, torch.zeros((graph.num_edges))], 0)
+                    val_mask = torch.cat([graph.hypergraph_nodes.val_mask, torch.zeros((graph.num_edges))], 0)
+                    test_mask = torch.cat([graph.hypergraph_nodes.test_mask, torch.zeros((graph.num_edges))], 0)
                 else:
                     graph = data.clique_graph()
-                    edge_index = data.edge_index
-                    edge_weight = data.edge_weight
-                    y = data.y
-                    train_mask = data.train_mask
-                    val_mask = data.val_mask,
-                    test_mask = data.test_mask
+                    edge_index = graph.edge_index
+                    edge_weight = graph.edge_weight
+                    y = graph.y
+                    train_mask = graph.train_mask
+                    val_mask = graph.val_mask,
+                    test_mask = graph.test_mask
                 method_hp_set["out_channels"] = 1
                 model = GRAPH_METHODS[args.graph_based](**method_hp_set)
                 
