@@ -13,6 +13,8 @@ torch_sparse~=0.6.18
 torch_spline_conv~=1.2.2
 tensorboard~=2.18.0
 torchmetrics~=1.6.2
+tokenizers~=0.21.0
 
 kagglehub~=0.3.13
 datasets~=3.6.0
+multiprocess~=0.70.16
