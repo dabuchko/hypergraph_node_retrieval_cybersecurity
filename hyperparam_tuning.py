@@ -72,7 +72,7 @@ class HyperparameterSetGenerator():
         with self._lock:
             if self._precomputed==None:
                 # return randomly sampled combination
-                comb = []
+                comb = [list() for _ in range(len(self._hyperparam_ranges))]
                 for hr_n, hr in enumerate(self._hyperparam_ranges):
                     for key in hr.keys():
                         comb[hr_n][key] = random.choice(self._hyperparam_ranges[key])

@@ -15,7 +15,7 @@ class MH1MDataset(Hypergraph):
         hyperedge_index = torch.tensor(hyperedge_index, dtype=int).T
         # load labels
         labels = torch.zeros((hyperedge_index[0].max()+1,), dtype=bool)
-        with open(path+"/labels.csv", 'r') as f:
+        with open(path+"/classes.csv", 'r') as f:
             for line in f:
                 line = line.strip()
                 labels[int(line)] = True
