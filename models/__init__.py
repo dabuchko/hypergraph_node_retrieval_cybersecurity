@@ -28,5 +28,5 @@ FEATURE_METHODS = {"Logistic Regression": LogisticRegression, "MLP": MLPClassifi
 HYPERGRAPH_METHODS = {"HyperGCN": HyperGCN, "UniGCN": UniGCN, "UniGAT": UniGAT, "UniGIN": UniGIN,
                       "UniSAGE": UniSAGE, "UniGCNII": UniGCNII, "HCHA": HCHA, "AllDeepSets": AllDeepSets,
                       "AllSetTransformer": AllSetTransformer, "HNHN": HNHN, "HGNN": HGNN, "CSP": CSP}
-GRAPH_METHODS = {"GCN": GCN, "GIN": GIN, "GAT": GAT, "GraphSAGE": GraphSAGE, "LabelPropagation": LabelPropagation}
+GRAPH_METHODS = {"GCN": GCN, "GIN": GIN, "GAT": GAT, "GraphSAGE": GraphSAGE, "Label Propagation": LabelPropagation}
 
