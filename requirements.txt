@@ -3,9 +3,16 @@ polars~=1.35.2
 matplotlib~=3.10.1
 scikit-learn~=1.4.2
 numpy~=1.24.3
+scipy~=1.13.0
 
-torch~=2.9.1
-tensorboard~=2.20.0
+torch~=2.6.0
+torch_cluster~=1.6.3
 torch-geometric~=2.7.0
+torch_scatter~=2.1.2
+torch_sparse~=0.6.18
+torch_spline_conv~=1.2.2
+tensorboard~=2.18.0
+torchmetrics~=1.6.2
 
 kagglehub~=0.3.13
+datasets~=3.6.0
