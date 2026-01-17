@@ -182,7 +182,7 @@ def main(args: argparse.ArgumentParser):
                     x, _ = embedding_class(data.sparse_incidence_matrix(), data.hyperedge_weight)
                 elif isinstance(embedding_class, SpectralEmbedding):
                     x = embedding_class(embedding_graph.edge_index.cpu(), embedding_graph.edge_weight.cpu())
-                    x = x.to(device)
+                x = x.to(device)
         elif args.graph_based=="CSP":
             x = data.y.clone()
             x[~graph.train_mask] = 0 # consider only training labels
