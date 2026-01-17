@@ -96,7 +96,10 @@ def main(args: argparse.ArgumentParser):
 
     if args.threads is not None and args.threads > 0:
         torch.set_num_threads(args.threads)
-        torch.set_num_interop_threads(args.threads)
+        try:
+            torch.set_num_interop_threads(args.threads)
+        except:
+            pass
     
     # Create logdir name
     args.logdir = os.path.join("logs", "{}-{}-{}".format(
