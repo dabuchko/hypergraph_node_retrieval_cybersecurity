@@ -41,7 +41,7 @@ def _construct_unnormalized_laplacian(edge_index: torch.Tensor, edge_weight: tor
         edge_weight[same] = -D[torch.arange(j)] # D and A have opposite sign when computing L
     # add diagonal values if they did not fit in the existing self-loops cells
     L_index = torch.cat([edge_index, torch.stack([torch.arange(j, num_nodes), torch.arange(j, num_nodes)])], 1)
-    L_weight = torch.cat([-edge_weight, D], 0)
+    L_weight = torch.cat([-edge_weight, D[j:]], 0)
     # construct an unnormalized laplacian matrix L
     L = coo_matrix((L_weight, (L_index[0], L_index[1])), shape=(num_nodes, num_nodes))
     return L, D.numpy()

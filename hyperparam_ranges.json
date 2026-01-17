@@ -2,20 +2,20 @@
     "Random Gaussian": {
         "mean": [0],
         "std": [1],
-        "dim": [8, 16, 32, 64, 128, 256]
+        "dim": [8, 16, 32, 64, 128]
     },
     "Matrix Factorization": {
-        "dim": [8, 16, 32, 64, 128, 256],
+        "dim": [8, 16, 32, 64, 128],
         "weight_decay": [0.3, 0.2, 0.1, 0.05, 0.01]
     },
     "Spectral Embedding": {
-        "dim": [8, 16, 32, 64, 128, 256],
+        "dim": [8, 16, 32, 64, 128],
         "mode": ["normalized", "side normalized", "unnormalized"]
     },
     "Node2Vec": {
-        "embedding_dim": [8, 16, 32, 64, 128, 256],
-        "walk_length": [1, 2, 4, 8, 16, 32],
-        "context_size": [1, 2, 3, 4, 5, 6],
+        "embedding_dim": [8, 16, 32, 64, 128],
+        "walk_length": [12, 16, 32],
+        "context_size": [2, 3, 4, 5, 6],
         "walks_per_node": [1, 2, 4, 8, 16],
         "p": [0.1, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2, 4, 8, 16],
         "q": [0.1, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2, 4, 8, 16],
@@ -37,29 +37,30 @@
     },
     "GCN": {
         "hidden_channels": [4, 8, 16, 32, 64, 128, 256],
-        "num_layers": [1, 2, 3, 4, 5, 6],
+        "num_layers": [1, 2, 3, 4],
         "dropout": [0.0, 0.2, 0.4, 0.6, 0.8]
     },
     "GAT": {
         "hidden_channels": [4, 8, 16, 32, 64, 128, 256],
-        "num_layers": [1, 2, 3, 4, 5, 6],
+        "num_layers": [1, 2, 3, 4],
         "dropout": [0.0, 0.2, 0.4, 0.6, 0.8],
         "heads": [4],
         "add_self_loops": [false, true]
     },
     "GIN": {
         "hidden_channels": [4, 8, 16, 32, 64, 128, 256],
-        "num_layers": [1, 2, 3, 4, 5, 6],
+        "num_layers": [1, 2, 3, 4],
         "dropout": [0.0, 0.2, 0.4, 0.6, 0.8]
     },
     "GraphSAGE": {
         "hidden_channels": [4, 8, 16, 32, 64, 128, 256],
-        "num_layers": [1, 2, 3, 4, 5, 6],
+        "num_layers": [1, 2, 3, 4],
         "dropout": [0.0, 0.2, 0.4, 0.6, 0.8],
-        "aggr": ["mean", "max"]
+        "aggr": ["mean", "max"],
+        "num_neighbors": [1, 2, 4, 8, 16, 32, 64]
     },
     "Label Propagation": {
-        "num_layers": [1, 2, 3, 4, 5, 6],
+        "num_layers": [1, 2, 3, 4],
         "alpha": [0.2, 0.4, 0.6, 0.8, 1.0]
     }
 }

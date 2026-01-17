@@ -7,7 +7,7 @@ class MH1MDataset(Hypergraph):
     def __init__(self, train_size=0.6, val_size=0.2):
         path = kagglehub.dataset_download("dbuchko/mh-1m-dataset-hypergraph-representation")
         # load hyperedges
-        data = np.loadtxt(path + "/hyperedges.csv", delimiter=",", dtype=np.int64)
+        data = np.loadtxt(path + "/hyperedges.csv", delimiter=",", dtype=np.int32)
         hyperedge_index = torch.from_numpy(data).T
         # load labels
         labels = torch.zeros((hyperedge_index[0].max()+1,), dtype=bool)

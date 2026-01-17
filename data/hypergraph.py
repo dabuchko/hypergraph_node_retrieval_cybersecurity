@@ -10,7 +10,7 @@ class Hypergraph:
     represents node id and second row represents hyperedge id. It encodes
     belongingness of specific node to specific hyperedge.
 
-    2. `labels` -- torch.Tensor vector which contains a category class (non-negative
+    2. `y` -- torch.Tensor vector which contains a category class (non-negative
     integer) for every node in the hypergraph. Can be None if no labels are available.
     
     3. `hyperedge_weight` -- torch.Tensor vector which contains a hyperedge weight
@@ -22,7 +22,7 @@ class Hypergraph:
     in training/validation/test process and 0 if they should not be used in
     the corresponding process.
     """
-    def __init__(self, hyperedge_index: torch.Tensor, labels: torch.Tensor=None,
+    def __init__(self, hyperedge_index: torch.Tensor, y: torch.Tensor=None,
                  hyperedge_weight: torch.Tensor=None, train_mask: torch.Tensor=None,
                  val_mask: torch.Tensor=None, test_mask: torch.Tensor=None) -> None:
         """
@@ -33,9 +33,9 @@ class Hypergraph:
         represents node id and second row represents hyperedge id. It encodes
         belongingness of specific node to specific hyperedge.
         :type hyperedge_index: torch.Tensor
-        :param labels: torch.Tensor vector which contains a category class (non-negative
+        :param y: torch.Tensor vector which contains a category class (non-negative
         integer) for every node in the hypergraph. Can be None if no labels are available.
-        :type labels: torch.Tensor
+        :type y: torch.Tensor
         :param hyperedge_weight: torch.Tensor vector which contains a hyperedge weight
         for every hyperedge in the hypergraph. Can be None, if no hyperedge weights are
         available.
@@ -54,8 +54,8 @@ class Hypergraph:
         # validating input for being tensor
         if not isinstance(hyperedge_index, torch.Tensor):
             raise ValueError(f"Expected 'hyperedge_index' variable to be of type torch.Tensor, received {hyperedge_index.__class__}")
-        if not isinstance(labels, torch.Tensor) and labels!=None:
-            raise ValueError(f"Expected 'labels' variable to be of type torch.Tensor, received {labels.__class__}")
+        if not isinstance(y, torch.Tensor) and y!=None:
+            raise ValueError(f"Expected 'y' variable to be of type torch.Tensor, received {y.__class__}")
         if not isinstance(hyperedge_weight, torch.Tensor) and hyperedge_weight!=None:
             raise ValueError(f"Expected 'hyperedge_weight' variable to be of type torch.Tensor, received {hyperedge_weight.__class__}")
         if not isinstance(train_mask, torch.Tensor) and train_mask!=None:
@@ -67,11 +67,11 @@ class Hypergraph:
         # validating input according to the format rules of the corresponding argument
         if len(hyperedge_index.shape)!=2 or hyperedge_index.shape[0]!=2 or torch.is_floating_point(hyperedge_index) or torch.is_complex(hyperedge_index) or hyperedge_index.dtype==torch.bool:
             raise ValueError(f"'hyperedge_index' argument is provided in invalid format. Expected integer matrix with 2 rows, received tensor of shape {hyperedge_index.shape} and data type {hyperedge_index.dtype}")
-        if labels!=None and (torch.is_floating_point(labels) or torch.is_complex(labels)):
-            raise ValueError("'labels' tensor argument cannot be of floating or complex data types.")
+        if y!=None and (torch.is_floating_point(y) or torch.is_complex(y)):
+            raise ValueError("'y' tensor argument cannot be of floating or complex data types.")
         if torch.any(hyperedge_index<0):
             raise ValueError("'hyperedge_index' cannot contain negative values.")
-        if labels!=None and torch.any(labels<0):
+        if y!=None and torch.any(y<0):
             raise ValueError("Labels must be non-negative integers or booleans.")
         if train_mask!=None and (train_mask.dtype!=torch.bool or len(train_mask.shape)!=1):
             raise ValueError(f"Train mask must be a boolean vector, obtained tensor with data type {train_mask.dtype} and shape {train_mask.shape}")
@@ -92,12 +92,12 @@ class Hypergraph:
 
         # setting the number of nodes and edges
         self.num_nodes = int(hyperedge_index[0].max().item()) + 1
-        if labels!=None:
-            temp_num_nodes = labels.shape[0]
+        if y!=None:
+            temp_num_nodes = y.shape[0]
             if temp_num_nodes>=self.num_nodes:
                 self.num_nodes = temp_num_nodes
             else:
-                raise ValueError(f"'hyperedge_index' argument define more nodes ({self.num_nodes}) than described by 'labels' ({temp_num_nodes}).")
+                raise ValueError(f"'hyperedge_index' argument define more nodes ({self.num_nodes}) than described by 'y' ({temp_num_nodes}).")
         self.num_edges = int(hyperedge_index[1].max().item()) + 1
         if hyperedge_weight!=None:
             temp_num_edges = hyperedge_weight.shape[0]
@@ -106,9 +106,9 @@ class Hypergraph:
             else:
                 raise ValueError(f"'hyperedge_index' argument define more hyperedges ({self.num_edges}) than described by 'hyperedge_weight' ({temp_num_edges}).")
 
-        # validating labels and hyperedge_weight vectors
-        if labels!=None and (len(labels.shape)!=1 or labels.shape[0]!=self.num_nodes):
-            raise ValueError(f"'labels' must be a vector of size {self.num_nodes}, received tensor with shape {labels.shape}")
+        # validating y and hyperedge_weight vectors
+        if y!=None and (len(y.shape)!=1 or y.shape[0]!=self.num_nodes):
+            raise ValueError(f"'y' must be a vector of size {self.num_nodes}, received tensor with shape {y.shape}")
         if hyperedge_weight!=None and (len(hyperedge_weight.shape)!=1 or hyperedge_weight.shape[0]!=self.num_edges):
             raise ValueError(f"'hyperedge_weight' must be a vector of size {self.num_edges}, received tensor with shape {hyperedge_weight.shape}")
         if train_mask!=None and train_mask.shape[0]!=self.num_nodes:
@@ -119,7 +119,7 @@ class Hypergraph:
             raise ValueError(f"Test mask vector must be of size {self.num_nodes}, received {test_mask.shape[0]}")
         
         self.hyperedge_index = hyperedge_index
-        self.labels = labels
+        self.y = y
         self.hyperedge_weight = hyperedge_weight
         self.train_mask = train_mask
         self.val_mask = val_mask
@@ -166,8 +166,8 @@ class Hypergraph:
         weight_matrix.values()[weight_matrix.indices()[0]==weight_matrix.indices()[1]] = 0
         edge_index = weight_matrix.indices()
         return Data(edge_index=edge_index, edge_weight=weight_matrix.values(),
-                    y=self.labels, train_mask=self.train_mask, val_mask=self.val_mask,
-                    test_mask=self.test_mask)
+                    y=self.y, train_mask=self.train_mask, val_mask=self.val_mask,
+                    test_mask=self.test_mask, num_nodes=self.num_nodes)
 
     def incidence_graph(self):
         """
@@ -187,17 +187,24 @@ class Hypergraph:
             edge_index_weights = torch.ones((edge_index.shape[1],))
         else:
             edge_index_weights = self.hyperedge_weight[edge_index[1]]
-        edge_index[1] += self.num_nodes
         edge_index_swapped = torch.empty_like(edge_index)
         edge_index_swapped[0] = edge_index[1]
         edge_index_swapped[1] = edge_index[0]
-        edge_index = torch.cat([edge_index, edge_index_swapped], 1)
-        edge_index_weights = torch.cat([edge_index_weights, edge_index_weights], 0)
-        is_hypergraph_node = torch.zeros((self.num_nodes+self.num_edges,), dtype=bool)
-        is_hypergraph_node[:self.num_nodes] = True
-        return HeteroData(edge_index=edge_index, edge_weight=edge_index_weights,
-                          is_hypergraph_node=is_hypergraph_node,
-                          hypergraph_nodes = {
-                              'y': self.labels, 'train_mask': self.train_mask,
-                              'val_mask': self.val_mask, 'test_mask': self.test_mask
-                          })
+        hetero_data = HeteroData(
+            hypergraph_nodes = {
+                'y': self.y, 'train_mask': self.train_mask,
+                'val_mask': self.val_mask, 'test_mask': self.test_mask,
+                'num_nodes': self.num_nodes
+            },
+            hypergraph_edges = {
+                'num_nodes': self.num_edges
+            }
+        )
+        hetero_data['hypergraph_nodes', 'in', 'hypergraph_edges'].edge_index = edge_index
+        hetero_data['hypergraph_nodes', 'in', 'hypergraph_edges'].edge_weight = edge_index_weights
+        hetero_data['hypergraph_nodes', 'in', 'hypergraph_edges'].num_edges = edge_index.shape[1]
+        hetero_data['hypergraph_edges', 'include', 'hypergraph_nodes'].edge_index = edge_index_swapped
+        hetero_data['hypergraph_edges', 'include', 'hypergraph_nodes'].edge_weight = edge_index_weights
+        hetero_data['hypergraph_edges', 'include', 'hypergraph_nodes'].num_edges = edge_index.shape[1]
+        hetero_data.num_nodes = self.num_nodes + self.num_edges
+        return hetero_data

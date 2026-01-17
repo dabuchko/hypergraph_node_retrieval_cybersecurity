@@ -23,6 +23,7 @@ class CSPConv(MessagePassing):
         out = self.propagate(hyperedge_index, x=B.reshape(-1, 1)*x,
                              size=(num_nodes, num_edges))
         out = self.propagate(hyperedge_index.flip([0]), x=D.reshape(-1, 1)*out, size=(num_edges, num_nodes))
+        return out
 
 class CSP(BasicHGNN):
     supports_hyperedge_weight = False

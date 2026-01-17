@@ -15,9 +15,9 @@ def main(dataset: Hypergraph) -> None:
     # malicious node number, benign node number
     print(f"Number of nodes: {dataset.num_nodes}")
     print(f"Number of edges: {dataset.num_edges}")
-    if dataset.labels != None:
-        print(f"Number of malicious nodes: {(dataset.labels==1).sum()}")
-        print(f"Number of benign nodes: {(dataset.labels==0).sum()}")
+    if dataset.y != None:
+        print(f"Number of malicious nodes: {(dataset.y==1).sum()}")
+        print(f"Number of benign nodes: {(dataset.y==0).sum()}")
 
     # compute and print the number of empty and simple edges by iterating over
     # hyperedges matrix
