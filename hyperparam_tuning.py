@@ -142,120 +142,121 @@ def main(args: argparse.ArgumentParser):
     val_y = data.y[data.val_mask]
 
     for embedding_hp_set, method_hp_set in hp_generator:
-        print(embedding_hp_set, method_hp_set)
-        local_start = time()
-        embedding_graph = None
-        graph = None
-        x = None
+        try:
+            print(embedding_hp_set, method_hp_set)
+            local_start = time()
+            embedding_graph = None
+            graph = None
+            x = None
 
-        # load the graph representation of the hypergraph if needed
-        if args.embedding=="Node2Vec" or args.embedding=="Spectral Embedding":
-            if args.graph_repr_embedding=="incidence":
-                embedding_graph = data.incidence_graph().to_homogeneous().to(device)
-            elif args.graph_repr_embedding=="clique":
-                embedding_graph = data.clique_graph().to(device)
-            embedding_graph.y = embedding_graph.y.float()[:, None]
-        if args.graph_based in GRAPH_METHODS:
-            if embedding_graph!=None and args.graph_repr_GNN==args.graph_repr_embedding:
-                graph = embedding_graph
-            else:
-                if args.graph_repr_GNN=="incidence":
-                    graph = data.incidence_graph().to_homogeneous().to(device)
-                elif args.graph_repr_GNN=="clique":
-                    graph = data.clique_graph().to(device)
-                graph.y = graph.y.float()[:, None]
-
-
-        # compute embeddings if needed
-        if embedding_set:
-            if args.embedding=="Node2Vec":
-                embedding_hp_set["edge_index"] = embedding_graph.edge_index
-                embedding_hp_set["num_nodes"] = embedding_graph.num_nodes
-                node2vec = EMBEDDING_METHODS[args.embedding](**embedding_hp_set).to(device)
-                del embedding_hp_set["edge_index"]
-                x = fit_transform_node2vec(node2vec, args.patience, args.delta, args.batch_size, args.num_workers)
-            else:
-                embedding_class = EMBEDDING_METHODS[args.embedding](**embedding_hp_set)
-                if isinstance(embedding_class, RandomGaussian):
-                    x = embedding_class(data.num_nodes)
-                elif isinstance(embedding_class, MatrixFactorization):
-                    x, _ = embedding_class(data.sparse_incidence_matrix(), data.hyperedge_weight)
-                elif isinstance(embedding_class, SpectralEmbedding):
-                    x = embedding_class(embedding_graph.edge_index.cpu(), embedding_graph.edge_weight.cpu())
-                x = x.to(device)
-        elif args.graph_based=="CSP":
-            x = data.y.clone()
-            x[~graph.train_mask] = 0 # consider only training labels
-        elif args.graph_based=="Label Propagation":
-            x = graph.y.clone()
-            x[~graph.train_mask] = 0 # consider only training labels
-        
-        
-        embedding_end = time()
-        # train methods on embeddings (if any) and generate predictions 'preds'
-        if features_set:
-            x = x[:data.num_nodes]
-            train_x = x[data.train_mask].cpu().numpy()
-            train_y = data.y[data.train_mask].cpu().numpy()
-            val_x = x[data.val_mask].cpu().numpy()
-            method = FEATURE_METHODS[args.feature_based](**method_hp_set).fit(train_x, train_y)
-            preds = torch.tensor(method.predict_proba(val_x))[:, 1]
-        elif args.graph_based=="Label Propagation":
-            preds = GRAPH_METHODS[args.graph_based](**method_hp_set)(x, graph.edge_index, edge_weight=graph.edge_weight)
-            preds = preds[:data.num_nodes].cpu()[data.val_mask]
-        elif args.graph_based=="CSP":
-            preds = HYPERGRAPH_METHODS[args.graph_based](**method_hp_set)(x, data.hyperedge_index).cpu()[data.val_mask]
-        elif args.graph_based in GRAPH_METHODS:
-            if x!=None:
-                if args.graph_repr_GNN=="incidence":
-                    if x.shape[0]!=data.num_nodes + data.num_edges:
-                        x = torch.cat([x, torch.zeros((data.num_nodes + data.num_edges - x.shape[0], x.shape[1]), device=device)], 0)
-                    graph.x = x.to(device)
+            # load the graph representation of the hypergraph if needed
+            if args.embedding=="Node2Vec" or args.embedding=="Spectral Embedding":
+                if args.graph_repr_embedding=="incidence":
+                    embedding_graph = data.incidence_graph().to_homogeneous().to(device)
+                elif args.graph_repr_embedding=="clique":
+                    embedding_graph = data.clique_graph().to(device)
+                embedding_graph.y = embedding_graph.y.float()[:, None]
+            if args.graph_based in GRAPH_METHODS:
+                if embedding_graph!=None and args.graph_repr_GNN==args.graph_repr_embedding:
+                    graph = embedding_graph
                 else:
-                    graph.x = x[:data.num_nodes].to(device)
-                method_hp_set["in_channels"] = graph.x.shape[-1]
-                method_hp_set["out_channels"] = 1
-            if args.graph_based=="GraphSAGE":
-                method_hp_set_copy = method_hp_set.copy()
-                del method_hp_set_copy["num_neighbors"]
-                model = GRAPH_METHODS[args.graph_based](**method_hp_set_copy).to(device)
-                preds = train_GNN_batches(model, graph, [method_hp_set["num_neighbors"]], args.patience,
-                                    args.delta, args.batch_size, args.num_workers).cpu()
-            else:
-                model = GRAPH_METHODS[args.graph_based](**method_hp_set).to(device)
-                preds = train_GNN(model, graph, args.patience, args.delta).cpu()
-        elif args.graph_based in HYPERGRAPH_METHODS:
-            if x!=None:
-                x = x[:data.num_nodes].to(device)
-                method_hp_set["in_channels"] = x.shape[-1]
-                method_hp_set["out_channels"] = 1
-            model = HYPERGRAPH_METHODS[args.graph_based](**method_hp_set).to(device)
-            preds = train_HGNN(model, data, x, args.patience, args.delta).cpu()
-        else:
-            raise "Unexpected set. Feature method is not set and graph/hypergraph method is unknown."
-            
-            
-        local_end = time()
+                    if args.graph_repr_GNN=="incidence":
+                        graph = data.incidence_graph().to_homogeneous().to(device)
+                    elif args.graph_repr_GNN=="clique":
+                        graph = data.clique_graph().to(device)
+                    graph.y = graph.y.float()[:, None]
 
-        if int(time())-global_start>args.time_limit:
-            break
-        # evaluate predictions using Accuracy, ROC-AUC and PR-AUC metrics
-        roc_auc, pr_auc = evaluate(preds, val_y)
-        # save results
-        os.makedirs(args.logdir, exist_ok=True) # it is important to create directory not earlier than at least one iteration succeeded
-        with open(args.logdir + "/results.csv", "a+") as f:
-            embedding_time = embedding_end - local_start
-            total_time = local_end - local_start
-            f.write(f"{roc_auc},{pr_auc},{embedding_time},{total_time},{embedding_hp_set},{method_hp_set}\n")
-        if pr_auc>best_pr_auc:
-            best_pr_auc = pr_auc
-            best_hyperparameters = (embedding_hp_set, method_hp_set)
-            # save best predictions
-            if os.path.isfile(args.logdir+"/preds.pt"):
-                os.remove(args.logdir+"/preds.pt")
-            torch.save(preds, args.logdir+"/preds.pt")
-        # except Exception as e:
-        #     print(f"Exception {e.__class__} occured with hyperparameters: {embedding_hp_set} {method_hp_set}")
+
+            # compute embeddings if needed
+            if embedding_set:
+                if args.embedding=="Node2Vec":
+                    embedding_hp_set["edge_index"] = embedding_graph.edge_index
+                    embedding_hp_set["num_nodes"] = embedding_graph.num_nodes
+                    node2vec = EMBEDDING_METHODS[args.embedding](**embedding_hp_set).to(device)
+                    del embedding_hp_set["edge_index"]
+                    x = fit_transform_node2vec(node2vec, args.patience, args.delta, args.batch_size, args.num_workers)
+                else:
+                    embedding_class = EMBEDDING_METHODS[args.embedding](**embedding_hp_set)
+                    if isinstance(embedding_class, RandomGaussian):
+                        x = embedding_class(data.num_nodes)
+                    elif isinstance(embedding_class, MatrixFactorization):
+                        x, _ = embedding_class(data.sparse_incidence_matrix(), data.hyperedge_weight)
+                    elif isinstance(embedding_class, SpectralEmbedding):
+                        x = embedding_class(embedding_graph.edge_index.cpu(), embedding_graph.edge_weight.cpu())
+                    x = x.to(device)
+            elif args.graph_based=="CSP":
+                x = data.y.clone()
+                x[~graph.train_mask] = 0 # consider only training labels
+            elif args.graph_based=="Label Propagation":
+                x = graph.y.clone()
+                x[~graph.train_mask] = 0 # consider only training labels
+            
+            
+            embedding_end = time()
+            # train methods on embeddings (if any) and generate predictions 'preds'
+            if features_set:
+                x = x[:data.num_nodes]
+                train_x = x[data.train_mask].cpu().numpy()
+                train_y = data.y[data.train_mask].cpu().numpy()
+                val_x = x[data.val_mask].cpu().numpy()
+                method = FEATURE_METHODS[args.feature_based](**method_hp_set).fit(train_x, train_y)
+                preds = torch.tensor(method.predict_proba(val_x))[:, 1]
+            elif args.graph_based=="Label Propagation":
+                preds = GRAPH_METHODS[args.graph_based](**method_hp_set)(x, graph.edge_index, edge_weight=graph.edge_weight)
+                preds = preds[:data.num_nodes].cpu()[data.val_mask]
+            elif args.graph_based=="CSP":
+                preds = HYPERGRAPH_METHODS[args.graph_based](**method_hp_set)(x, data.hyperedge_index).cpu()[data.val_mask]
+            elif args.graph_based in GRAPH_METHODS:
+                if x!=None:
+                    if args.graph_repr_GNN=="incidence":
+                        if x.shape[0]!=data.num_nodes + data.num_edges:
+                            x = torch.cat([x, torch.zeros((data.num_nodes + data.num_edges - x.shape[0], x.shape[1]), device=device)], 0)
+                        graph.x = x.to(device)
+                    else:
+                        graph.x = x[:data.num_nodes].to(device)
+                    method_hp_set["in_channels"] = graph.x.shape[-1]
+                    method_hp_set["out_channels"] = 1
+                if args.graph_based=="GraphSAGE":
+                    method_hp_set_copy = method_hp_set.copy()
+                    del method_hp_set_copy["num_neighbors"]
+                    model = GRAPH_METHODS[args.graph_based](**method_hp_set_copy).to(device)
+                    preds = train_GNN_batches(model, graph, [method_hp_set["num_neighbors"]], args.patience,
+                                        args.delta, args.batch_size, args.num_workers).cpu()
+                else:
+                    model = GRAPH_METHODS[args.graph_based](**method_hp_set).to(device)
+                    preds = train_GNN(model, graph, args.patience, args.delta).cpu()
+            elif args.graph_based in HYPERGRAPH_METHODS:
+                if x!=None:
+                    x = x[:data.num_nodes].to(device)
+                    method_hp_set["in_channels"] = x.shape[-1]
+                    method_hp_set["out_channels"] = 1
+                model = HYPERGRAPH_METHODS[args.graph_based](**method_hp_set).to(device)
+                preds = train_HGNN(model, data, x, args.patience, args.delta).cpu()
+            else:
+                raise "Unexpected set. Feature method is not set and graph/hypergraph method is unknown."
+                
+                
+            local_end = time()
+
+            if int(time())-global_start>args.time_limit:
+                break
+            # evaluate predictions using Accuracy, ROC-AUC and PR-AUC metrics
+            roc_auc, pr_auc = evaluate(preds, val_y)
+            # save results
+            os.makedirs(args.logdir, exist_ok=True) # it is important to create directory not earlier than at least one iteration succeeded
+            with open(args.logdir + "/results.csv", "a+") as f:
+                embedding_time = embedding_end - local_start
+                total_time = local_end - local_start
+                f.write(f"{roc_auc},{pr_auc},{embedding_time},{total_time},{embedding_hp_set},{method_hp_set}\n")
+            if pr_auc>best_pr_auc:
+                best_pr_auc = pr_auc
+                best_hyperparameters = (embedding_hp_set, method_hp_set)
+                # save best predictions
+                if os.path.isfile(args.logdir+"/preds.pt"):
+                    os.remove(args.logdir+"/preds.pt")
+                torch.save(preds, args.logdir+"/preds.pt")
+        except Exception as e:
+            print(f"Exception {e.__class__} occured with hyperparameters: {embedding_hp_set} {method_hp_set}")
     print(best_hyperparameters)
 
 
