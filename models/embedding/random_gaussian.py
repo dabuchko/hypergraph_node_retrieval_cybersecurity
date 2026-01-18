@@ -28,5 +28,5 @@ class RandomGaussian(torch.nn.Module):
         :param N: Number of rows in the Gaussian embedding.
         """
         m = torch.empty((N, self.dim), dtype=torch.float)
-        torch.nn.init.normal(m, self.mean, self.std)
+        torch.nn.init.normal_(m, self.mean, self.std)
         return m
