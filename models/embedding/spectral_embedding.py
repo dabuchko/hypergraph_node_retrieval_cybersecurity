@@ -1,6 +1,7 @@
 import torch
-from scipy.sparse.linalg import eigsh
+from scipy.sparse.linalg import lobpcg
 from scipy.sparse import coo_matrix
+import numpy as np
 
 def _construct_unnormalized_laplacian(edge_index: torch.Tensor, edge_weight: torch.Tensor = None):
     """
@@ -77,7 +78,9 @@ class SpectralEmbeddingUnnormalized(torch.nn.Module):
         """
         L, _ = _construct_unnormalized_laplacian(edge_index, edge_weight)
         # find eigenvectors
-        _, V = eigsh(L, self.dim+1, which="SA", sigma=1e-6)
+        init_eigenvectors = np.random.rand(L.shape[0], self.dim+1)
+        init_eigenvectors[:, 0] = 1
+        _, V = lobpcg(L, init_eigenvectors, largest=False, maxiter=10)
         return torch.tensor(V[:, 1:].copy())
 
 class SpectralEmbeddingSideNorm(torch.nn.Module):
@@ -111,10 +114,11 @@ class SpectralEmbeddingSideNorm(torch.nn.Module):
         """
         L, D = _construct_unnormalized_laplacian(edge_index, edge_weight)
         # normalize weights by columns
-        D += 1e-9 # prevent division by 0
-        L.data /= D[L.col]
+        L.data /= D[L.col] + 1e-9
         # find eigenvectors
-        _, V = eigsh(L, self.dim+1, which="SA", sigma=1e-6)
+        init_eigenvectors = np.random.rand(L.shape[0], self.dim+1)
+        init_eigenvectors[:, 0] = 1
+        _, V = lobpcg(L, init_eigenvectors, largest=False, maxiter=10)
         return torch.tensor(V[:, 1:].copy())
 
 class SpectralEmbeddingNorm(torch.nn.Module):
@@ -149,11 +153,12 @@ class SpectralEmbeddingNorm(torch.nn.Module):
         """
         L, D = _construct_unnormalized_laplacian(edge_index, edge_weight)
         # normalize weights by columns and rows
-        D += 1e-9 # prevent division by 0
-        L.data /= D[L.col] ** 0.5
-        L.data /= D[L.row] ** 0.5
+        L.data /= D[L.col] ** 0.5 + 1e-9
+        L.data /= D[L.row] ** 0.5 + 1e-9
         # find eigenvectors
-        _, V = eigsh(L, self.dim+1, which="SA", sigma=1e-6)
+        init_eigenvectors = np.random.rand(L.shape[0], self.dim+1)
+        init_eigenvectors[:, 0] = 1
+        _, V = lobpcg(L, init_eigenvectors, largest=False, maxiter=10)
         V = torch.tensor(V[:, 1:].copy()) + 1e-9
         # normalize rows
         V = V / ((V**2).sum(1) ** 0.5).reshape(-1, 1)

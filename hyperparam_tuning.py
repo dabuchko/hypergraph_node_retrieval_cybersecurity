@@ -183,7 +183,7 @@ def main(args: argparse.ArgumentParser):
                         x, _ = embedding_class(data.sparse_incidence_matrix(), data.hyperedge_weight)
                     elif isinstance(embedding_class, SpectralEmbedding):
                         x = embedding_class(embedding_graph.edge_index.cpu(), embedding_graph.edge_weight.cpu())
-                    x = x.to(device)
+                    x = x.float().to(device)
             elif args.graph_based=="CSP":
                 x = data.y.clone()
                 x[~graph.train_mask] = 0 # consider only training labels
@@ -194,6 +194,7 @@ def main(args: argparse.ArgumentParser):
             
             embedding_end = time()
             # train methods on embeddings (if any) and generate predictions 'preds'
+            print("embedding done")
             if features_set:
                 x = x[:data.num_nodes]
                 train_x = x[data.train_mask].cpu().numpy()
@@ -283,7 +284,7 @@ if __name__ == '__main__':
     parser.add_argument("--seed", default=42, type=int, help="Random seed.")
     parser.add_argument("--num_workers", default=4, type=int, help="Number of workers to be used in dataloaders.")
     parser.add_argument("--threads", default=16, type=int, help="Maximum number of threads to use.")
-    parser.add_argument("--batch_size", default=512, type=int, help="Batch size.")
+    parser.add_argument("--batch_size", default=2048, type=int, help="Batch size.")
     parser.add_argument("--hyperparam_ranges", default="hyperparam_ranges.json",
                         type=str, help="Path to the JSON file containing hyperparameter ranges" \
                         "for each method.")

@@ -95,8 +95,9 @@ def train_GNN_batches(model, graph, num_neighbors:list = [3], patience: int = 0,
     while current_patience>=0:
         model.train()
         for batch_graph in loader:
+            batch_graph = batch_graph.to(graph.x.device)
             optimizer.zero_grad()
-            preds = model(batch_graph.x, batch_graph.edge_index, edge_weight=batch_graph.edge_weight)
+            preds = model(batch_graph.x, batch_graph.edge_label_index, edge_weight=graph.edge_weight[batch_graph.e_id])
             loss = loss_fn(preds[batch_graph.train_mask], batch_graph.y[batch_graph.train_mask])
             loss.backward()
             optimizer.step()
@@ -110,6 +111,7 @@ def train_GNN_batches(model, graph, num_neighbors:list = [3], patience: int = 0,
         else:
             current_patience = patience
         last_loss = min(loss.item(), last_loss)
+        print(loss.item())
     preds = preds.detach()[graph.val_mask]
     return preds[:, 0]
 
