@@ -180,7 +180,8 @@ def main(args: argparse.ArgumentParser):
                     if isinstance(embedding_class, RandomGaussian):
                         x = embedding_class(data.num_nodes)
                     elif isinstance(embedding_class, MatrixFactorization):
-                        x, _ = embedding_class(data.sparse_incidence_matrix(), data.hyperedge_weight)
+                        P, Q = embedding_class(data.sparse_incidence_matrix(), data.hyperedge_weight)
+                        x = torch.cat([P, Q], 0)
                     elif isinstance(embedding_class, SpectralEmbedding):
                         x = embedding_class(embedding_graph.edge_index.cpu(), embedding_graph.edge_weight.cpu())
                     x = x.float().to(device)
