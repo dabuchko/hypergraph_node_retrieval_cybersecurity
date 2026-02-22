@@ -1,4 +1,64 @@
+import torch
+import torch_geometric
 from torch.nn import Module
+from torch import Tensor, ones
+from .basic_hgnn import BasicHGNN
+from torch_geometric.nn.conv import MessagePassing
+from torch_geometric.utils import scatter
 
-class HyperGCN(Module):
-    pass
+class HyperGCNConv(MessagePassing):
+    def __init__(self, in_channels: int, out_channels: int, bias: bool = False):
+        super().__init__("sum", aggr_kwargs=None, flow="source_to_target", node_dim=-2, decomposed_layers=1)
+        self.lin = torch.nn.Linear(in_channels, out_channels, bias=bias)
+    
+    def forward(self, x: Tensor, hyperedge_index: Tensor):
+        x = self.lin(x)
+        num_nodes = hyperedge_index[0, :].max().item()+1
+        with torch.no_grad():
+            edge_index = []
+            edge_weight = []
+            hyperedge_dict = {} # key is hyperedge index, values are hypernodes indecies
+            for i in range(hyperedge_index.shape[1]):
+                node = hyperedge_index[0, i].item()
+                edge = hyperedge_index[1, i].item()
+                if edge in hyperedge_dict:
+                    hyperedge_dict[edge].append(node)
+                else:
+                    hyperedge_dict[edge] = [node]
+            for i in range(num_nodes):
+                edge_index.append((i,i))
+                edge_weight.append(1.0)
+            for hyperedge in hyperedge_dict.keys():
+                max_dist = 0
+                best_i, best_j = 0, 0
+                for i in hyperedge_dict[hyperedge][:-1]:
+                    d = ((x[i+1:] - x[i][None, :])**2).sum(1)
+                    max_d = d.max().item()
+                    if max_dist<max_d:
+                        max_dist = max_d
+                        best_i = i
+                        best_j = d.argmax().item() + i + 1
+                w = 1/(2*len(hyperedge_dict[hyperedge]) - 3)
+                edge_index.append((best_j, best_i))
+                edge_index.append((best_i, best_j))
+                edge_weight.append(w)
+                edge_weight.append(w)
+                for n in hyperedge_dict[hyperedge]:
+                    if n!=best_i and n!=best_j:
+                        edge_index.append((n, best_i))
+                        edge_index.append((n, best_j))
+                        edge_index.append((best_i, n))
+                        edge_index.append((best_j, n))
+                        for _ in range(4):
+                            edge_weight.append(w)
+            edge_index = torch.tensor(edge_index, device=x.device).T
+            edge_weight = torch.tensor(edge_weight, device=x.device)
+        return self.propagate(edge_index, x=x, size=(num_nodes, num_nodes), edge_weight=edge_weight)
+
+
+class HyperGCN(BasicHGNN):
+    supports_hyperedge_weight = False
+    supports_hyperedge_attr = False
+
+    def init_conv(self, in_channels: int, out_channels: int, bias: bool = False, **kwargs):
+        return HyperGCNConv(in_channels, out_channels, bias)

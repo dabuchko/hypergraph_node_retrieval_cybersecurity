@@ -16,7 +16,10 @@ from .hypergraph.csp import CSP
 
 __all__ = ["EMBEDDING_METHODS", "FEATURE_METHODS", "HYPERGRAPH_METHODS", "GRAPH_METHODS", "RandomGaussian",
            "MatrixFactorization", "SpectralEmbedding", "SpectralEmbeddingUnnormalized", "SpectralEmbeddingSideNorm",
-           "SpectralEmbeddingNorm", "Node2Vec", "LogisticRegression", "GaussianNB"]
+           "SpectralEmbeddingNorm", "Node2Vec", "LogisticRegression", "MLPClassifier", "GaussianNB",
+           "KNeighborsClassifier", "HyperGCN", "UniGCN", "UniGAT", "UniGIN", "UniSAGE", "UniGCNII",
+           "HCHA", "AllDeepSets", "AllSetTransformer", "HNHN", "HGNN", "CSP", "GCN", "GIN", "GAT",
+           "GraphSAGE", "LabelPropagation"]
 
 EMBEDDING_METHODS = {"Random Gaussian": RandomGaussian, "Matrix Factorization": MatrixFactorization,
                      "Spectral Embedding": SpectralEmbedding,
