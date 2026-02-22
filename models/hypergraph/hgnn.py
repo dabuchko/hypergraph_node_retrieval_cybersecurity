@@ -2,8 +2,8 @@ from .basic_hgnn import BasicHGNN
 from torch_geometric.nn.conv import HypergraphConv
 
 class HGNN(BasicHGNN):
-    supports_edge_weight = True
-    supports_edge_attr = False
+    supports_hyperedge_weight = True
+    supports_hyperedge_attr = False
 
-    def init_conv(self, in_channels: int, out_channels: int, heads: int = 1, dropout: float = 0.0):
-        return HypergraphConv(in_channels, out_channels, False, heads=heads, dropout=dropout)
+    def init_conv(self, in_channels: int, out_channels: int, dropout: float = 0.0, bias: bool = False):
+        return HypergraphConv(in_channels, out_channels, False, dropout=dropout, bias=bias)

@@ -2,6 +2,7 @@ import torch
 import torch_geometric
 from torchmetrics import AUROC, PrecisionRecallCurve
 from sklearn.metrics import auc, roc_curve
+from models import RandomGaussian
 
 def fit_transform_node2vec(node2vec_model, patience: int = 0, delta: float = 0.0, batch_size: int = 512, num_workers: int = 0):
     last_loss = float("inf")
@@ -85,7 +86,7 @@ def train_GNN_batches(model, graph, num_neighbors:list = [3], patience: int = 0,
     if graph.val_mask==None:
         graph.train_mask = torch.ones((graph.num_nodes,), dtype=torch.bool).to(graph.x.device)
     if len(graph.y.shape)>=2 and graph.y.shape[1]!=1:
-        assert "The current function was designed for binary classes only."
+        assert "The current function was designed for binary classes only. The second dimension should be 1."
     if len(graph.y)==1:
         graph.y = graph.y.reshape(-1, 1)
     graph.y = graph.y.float().to(graph.x.device)
@@ -116,31 +117,37 @@ def train_GNN_batches(model, graph, num_neighbors:list = [3], patience: int = 0,
     return preds[:, 0]
 
 
-def train_HGNN(model, hypergraph, x, patience: int = 0, delta: float = 0.0):
+def train_HGNN(model, hypergraph, x, hyperedge_attr: torch.Tensor = None, patience: int = 0, delta: float = 0.0):
     last_loss = float("inf")
     current_patience = patience
     loss_fn = torch.nn.BCEWithLogitsLoss()
     optimizer = torch.optim.Adam(model.parameters(), 0.01)
 
     # verify the data format, fix existing data, and add missing data
-    if not isinstance(hypergraph, torch_geometric.data.Data) or x==None or hypergraph.edge_index==None or hypergraph.y==None:
+    if not isinstance(hypergraph, torch_geometric.data.Data) or x==None or hypergraph.hyperedge_index==None or hypergraph.y==None:
         assert "Graph component must be a torch_geometric.data.Data object with attributes: x, edge_index, and y. The properties of the "
-    if hypergraph.edge_weight==None:
-        hypergraph.edge_weight = torch.ones((hypergraph.edge_index.shape[1],)).to(hypergraph.edge_index.device)
+    if hypergraph.hyperedge_weight==None:
+        hypergraph.hyperedge_weight = torch.ones((hypergraph.hyperedge_index.shape[1],)).to(hypergraph.hyperedge_index.device)
     if hypergraph.train_mask==None:
-        hypergraph.train_mask = torch.ones((hypergraph.num_nodes,), dtype=torch.bool).to(hypergraph.x.device)
+        hypergraph.train_mask = torch.ones((hypergraph.num_nodes,), dtype=torch.bool).to(hypergraph.hyperedge_index.device)
     if hypergraph.val_mask==None:
-        hypergraph.train_mask = torch.ones((hypergraph.num_nodes,), dtype=torch.bool).to(hypergraph.x.device)
+        hypergraph.train_mask = torch.ones((hypergraph.num_nodes,), dtype=torch.bool).to(hypergraph.hyperedge_index.device)
     if len(hypergraph.y.shape)>=2 and hypergraph.y.shape[1]!=1:
         assert "The current function was designed for binary classes only."
-    if len(hypergraph.y)==1:
+    if len(hypergraph.y.shape)==1:
         hypergraph.y = hypergraph.y.reshape(-1, 1)
-    y = hypergraph.y.float().to(hypergraph.x.device)
+    if hyperedge_attr==None and model.supports_hyperedge_attr:
+        hyperedge_attr = RandomGaussian(x.shape[-1])(hypergraph.num_edges)
+    x = x.to(hypergraph.hyperedge_index.device)
+    y = hypergraph.y.float().to(hypergraph.hyperedge_index.device)
 
     while current_patience>=0:
         model.train()
         optimizer.zero_grad()
-        preds = model(x, hypergraph.hyperedge_index, edge_weight=hypergraph.hyperedge_weight)
+        if model.supports_hyperedge_attr:
+            preds = model(x, hypergraph.hyperedge_index, hyperedge_attr=hyperedge_attr, hyperedge_weight=hypergraph.hyperedge_weight)
+        else:
+            preds = model(x, hypergraph.hyperedge_index, hyperedge_weight=hypergraph.hyperedge_weight)
         loss = loss_fn(preds[hypergraph.train_mask], y[hypergraph.train_mask])
         loss.backward()
         optimizer.step()

@@ -208,3 +208,9 @@ class Hypergraph:
         hetero_data['hypergraph_edges', 'include', 'hypergraph_nodes'].num_edges = edge_index.shape[1]
         hetero_data.num_nodes = self.num_nodes + self.num_edges
         return hetero_data
+    
+    def to(self, device):
+        for key, value in vars(self).items():
+            if key!="num_nodes" and key!="num_edges" and isinstance(value, torch.Tensor):
+                vars(self)[key] = value.to(device)
+        return self
