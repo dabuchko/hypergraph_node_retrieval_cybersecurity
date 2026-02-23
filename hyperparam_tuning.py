@@ -115,7 +115,7 @@ def main(args: argparse.ArgumentParser):
         device = torch.device("cpu")
     
     # create dataset
-    data = DATASETS[args.dataset]()
+    data = DATASETS[args.dataset]().to(device)
 
     # load hyperparameters ranges
     try:
@@ -139,7 +139,7 @@ def main(args: argparse.ArgumentParser):
     best_pr_auc = 0
     best_hyperparameters = None
     global_start = time()
-    val_y = data.y[data.val_mask]
+    val_y = data.y[data.val_mask].cpu()
 
     for embedding_hp_set, method_hp_set in hp_generator:
         try:
@@ -228,12 +228,15 @@ def main(args: argparse.ArgumentParser):
                     model = GRAPH_METHODS[args.graph_based](**method_hp_set).to(device)
                     preds = train_GNN(model, graph, args.patience, args.delta).cpu()
             elif args.graph_based in HYPERGRAPH_METHODS:
+                hyperedge_attr = None
                 if x!=None:
+                    if x.shape[0]>data.num_nodes:
+                        hyperedge_attr = x[data.num_nodes:].to(device)
                     x = x[:data.num_nodes].to(device)
                     method_hp_set["in_channels"] = x.shape[-1]
                     method_hp_set["out_channels"] = 1
                 model = HYPERGRAPH_METHODS[args.graph_based](**method_hp_set).to(device)
-                preds = train_HGNN(model, data, x, args.patience, args.delta).cpu()
+                preds = train_HGNN(model, data, x, hyperedge_attr, args.patience, args.delta).cpu()
             else:
                 raise "Unexpected set. Feature method is not set and graph/hypergraph method is unknown."
                 
@@ -249,7 +252,7 @@ def main(args: argparse.ArgumentParser):
             with open(args.logdir + "/results.csv", "a+") as f:
                 embedding_time = embedding_end - local_start
                 total_time = local_end - local_start
-                f.write(f"{roc_auc},{pr_auc},{embedding_time},{total_time},{embedding_hp_set},{method_hp_set}\n")
+                f.write(f"{roc_auc},{pr_auc},{embedding_time},{total_time},{embedding_hp_set},\"{method_hp_set}\"\n")
             if pr_auc>best_pr_auc:
                 best_pr_auc = pr_auc
                 best_hyperparameters = (embedding_hp_set, method_hp_set)
