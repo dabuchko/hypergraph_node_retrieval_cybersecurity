@@ -215,7 +215,7 @@ def main(args: argparse.ArgumentParser):
                 method = FEATURE_METHODS[args.feature_based](**method_hp_set)
                 if args.imbalance=="weight":
                     weights = np.ones((train_x.shape[0],), dtype=float)
-                    weights[train_y[:, 0]==1] = weight_true_class
+                    weights[train_y==1] = weight_true_class
                     method.fit(train_x, train_y, weights)
                 else:
                     if args.imbalance=="random_oversampling":
