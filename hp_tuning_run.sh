@@ -18,8 +18,8 @@ for f in "Logistic Regression" "MLP" "Naive Bayes" "KNN"; do
 done
 
 # General graph based
-for f in "GCN", "GIN", "GAT", "GraphSAGE", "Label Propagation"; do
-    for repr in "incidence", "clique"; do
+for f in "GCN" "GIN" "GAT" "GraphSAGE" "Label Propagation"; do
+    for repr in "incidence" "clique"; do
         python hyperparam_tuning.py "$1" --imbalance="$imbalance" --embedding="Random Gaussian" --graph_based="$f" --graph_repr_GNN="$repr"
         python hyperparam_tuning.py "$1" --imbalance="$imbalance" --embedding="Matrix Factorization" --graph_based="$f" --graph_repr_GNN="$repr"
         python hyperparam_tuning.py "$1" --imbalance="$imbalance" --embedding="Spectral Embedding" --graph_based="$f" --graph_repr_GNN="$repr"
@@ -30,7 +30,7 @@ for f in "GCN", "GIN", "GAT", "GraphSAGE", "Label Propagation"; do
 done
 
 # Hypergraph based
-for f in "HyperGCN", "UniGCN", "UniGAT", "UniGIN", "UniSAGE", "UniGCNII", "HCHA", "AllDeepSets", "AllSetTransformer", "HNHN", "HGNN", "CSP", "HyperSAGE", "MaxSum"; do
+for f in "HyperGCN" "UniGCN" "UniGAT" "UniGIN" "UniSAGE" "UniGCNII" "HCHA" "AllDeepSets" "AllSetTransformer" "HNHN" "HGNN" "CSP" "HyperSAGE" "MaxSum"; do
     python hyperparam_tuning.py "$1" --imbalance="$imbalance" --embedding="Random Gaussian" --graph_based="$f"
     python hyperparam_tuning.py "$1" --imbalance="$imbalance" --embedding="Matrix Factorization" --graph_based="$f"
     python hyperparam_tuning.py "$1" --imbalance="$imbalance" --embedding="Spectral Embedding" --graph_based="$f"
