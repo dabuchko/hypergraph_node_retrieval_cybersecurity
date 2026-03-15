@@ -124,7 +124,7 @@ def main(args: argparse.ArgumentParser):
     data = DATASETS[args.dataset]().to(device)
     weight_true_class = None
     if args.imbalance=="weight":
-        weight_true_class = data.y.sum()
+        weight_true_class = data.y.sum().float()
         weight_true_class /= data.y.shape[0] - weight_true_class
 
     # load hyperparameters ranges
