@@ -6,6 +6,8 @@ import os
 import datetime
 import re
 import copy
+from imblearn.under_sampling import RandomUnderSampler, TomekLinks
+from imblearn.over_sampling import RandomOverSampler, SMOTE
 from time import time
 
 import torch
@@ -14,7 +16,7 @@ import torch_geometric
 from data import *
 from models import *
 
-from train import train_GNN, train_GNN_batches, train_HGNN, evaluate, fit_transform_node2vec
+from train import train_GNN, train_GNN_batches, train_HGNN, train_HGNN_batches, evaluate, fit_transform_node2vec
 
 class HyperparameterSetGenerator():
     """
@@ -89,6 +91,10 @@ def main(args: argparse.ArgumentParser):
     if not ((features_set and not graph_set) or
         (not features_set and graph_set)):
         raise Exception("Only one option is available. Either provide 'feature_based' or 'graph_based' argument.")
+    if args.imbalance in ["random_oversampling", "random_undersampling", "SMOTE", "tomek_links"] and  graph_set:
+        raise Exception("Specified imbalance handling strategy is unavailable for graph methods.")
+    if args.imbalance=="weight" and (args.feature_based=="KNN" or args.graph_based=="Label Propagation" or args.graph_based=="CSP"):
+            assert "'weight' imbalance sampling handling strategy is unavailable for KNN and label propagation methods."
 
     # Set the random seed and the number of threads.
     if args.seed is not None:
@@ -116,6 +122,10 @@ def main(args: argparse.ArgumentParser):
     
     # create dataset
     data = DATASETS[args.dataset]().to(device)
+    weight_true_class = None
+    if args.imbalance=="weight":
+        weight_true_class = data.y.sum()
+        weight_true_class /= data.y.shape[0] - weight_true_class
 
     # load hyperparameters ranges
     try:
@@ -140,6 +150,7 @@ def main(args: argparse.ArgumentParser):
     best_hyperparameters = None
     global_start = time()
     val_y = data.y[data.val_mask].cpu()
+    test_y = data.y[data.test_mask].cpu()
 
     for embedding_hp_set, method_hp_set in hp_generator:
         try:
@@ -197,17 +208,30 @@ def main(args: argparse.ArgumentParser):
             # train methods on embeddings (if any) and generate predictions 'preds'
             print("embedding done")
             if features_set:
-                x = x[:data.num_nodes]
-                train_x = x[data.train_mask].cpu().numpy()
+                x = x[:data.num_nodes].cpu().numpy()
+                train_x = x[data.train_mask.cpu().numpy()]
                 train_y = data.y[data.train_mask].cpu().numpy()
-                val_x = x[data.val_mask].cpu().numpy()
-                method = FEATURE_METHODS[args.feature_based](**method_hp_set).fit(train_x, train_y)
-                preds = torch.tensor(method.predict_proba(val_x))[:, 1]
+                method = FEATURE_METHODS[args.feature_based](**method_hp_set)
+                if args.imbalance=="weight":
+                    weights = train_x.new_ones((train_x.shape[0],))
+                    weights[train_y[:, 0]==1] = weight_true_class
+                    method.fit(train_x, train_y, weights)
+                else:
+                    if args.imbalance=="random_oversampling":
+                        train_x, train_y = RandomOverSampler().fit_resample(train_x, train_y)
+                    elif args.imbalance=="random_undersampling":
+                        train_x, train_y = RandomUnderSampler().fit_resample(train_x, train_y)
+                    elif args.imbalance=="SMOTE":
+                        train_x, train_y = SMOTE().fit_resample(train_x, train_y)
+                    elif args.imbalance=="tomek_links":
+                        train_x, train_y = TomekLinks().fit_resample(train_x, train_y)
+                    method.fit(train_x, train_y)
+                preds = torch.tensor(method.predict_proba(x))[:, 1]
             elif args.graph_based=="Label Propagation":
                 preds = GRAPH_METHODS[args.graph_based](**method_hp_set)(x, graph.edge_index, edge_weight=graph.edge_weight)
-                preds = preds[:data.num_nodes].cpu()[data.val_mask]
+                preds = preds[:data.num_nodes].cpu()
             elif args.graph_based=="CSP":
-                preds = HYPERGRAPH_METHODS[args.graph_based](**method_hp_set)(x, data.hyperedge_index).cpu()[data.val_mask]
+                preds = HYPERGRAPH_METHODS[args.graph_based](**method_hp_set)(x, data.hyperedge_index).cpu()
             elif args.graph_based in GRAPH_METHODS:
                 if x!=None:
                     if args.graph_repr_GNN=="incidence":
@@ -222,11 +246,11 @@ def main(args: argparse.ArgumentParser):
                     method_hp_set_copy = method_hp_set.copy()
                     del method_hp_set_copy["num_neighbors"]
                     model = GRAPH_METHODS[args.graph_based](**method_hp_set_copy).to(device)
-                    preds = train_GNN_batches(model, graph, [method_hp_set["num_neighbors"]], args.patience,
-                                        args.delta, args.batch_size, args.num_workers).cpu()
+                    preds = train_GNN_batches(model, graph, method_hp_set["num_neighbors"], args.patience,
+                                        args.delta, args.batch_size, weight_true_class).cpu()
                 else:
                     model = GRAPH_METHODS[args.graph_based](**method_hp_set).to(device)
-                    preds = train_GNN(model, graph, args.patience, args.delta).cpu()
+                    preds = train_GNN(model, graph, args.patience, args.delta, weight_true_class).cpu()
             elif args.graph_based in HYPERGRAPH_METHODS:
                 hyperedge_attr = None
                 if x!=None:
@@ -235,8 +259,15 @@ def main(args: argparse.ArgumentParser):
                     x = x[:data.num_nodes].to(device)
                     method_hp_set["in_channels"] = x.shape[-1]
                     method_hp_set["out_channels"] = 1
-                model = HYPERGRAPH_METHODS[args.graph_based](**method_hp_set).to(device)
-                preds = train_HGNN(model, data, x, hyperedge_attr, args.patience, args.delta).cpu()
+                if args.graph_based=="HyperSAGE" or args.graph_based=="MaxSum":
+                    method_hp_set_copy = method_hp_set.copy()
+                    del method_hp_set_copy["num_neighbors"]
+                    model = HYPERGRAPH_METHODS[args.graph_based](**method_hp_set_copy).to(device)
+                    preds = train_HGNN_batches(model, data, x, method_hp_set["num_neighbors"], hyperedge_attr,
+                                               args.patience, args.delta, weight_true_class).cpu()
+                else:
+                    model = HYPERGRAPH_METHODS[args.graph_based](**method_hp_set).to(device)
+                    preds = train_HGNN(model, data, x, hyperedge_attr, args.patience, args.delta, weight_true_class).cpu()
             else:
                 raise "Unexpected set. Feature method is not set and graph/hypergraph method is unknown."
                 
@@ -246,13 +277,14 @@ def main(args: argparse.ArgumentParser):
             if int(time())-global_start>args.time_limit:
                 break
             # evaluate predictions using Accuracy, ROC-AUC and PR-AUC metrics
-            roc_auc, pr_auc = evaluate(preds, val_y)
+            roc_auc, pr_auc = evaluate(preds[data.val_mask.cpu()], val_y)
+            test_roc_auc, test_pr_auc = evaluate(preds[data.test_mask.cpu()], test_y)
             # save results
             os.makedirs(args.logdir, exist_ok=True) # it is important to create directory not earlier than at least one iteration succeeded
             with open(args.logdir + "/results.csv", "a+") as f:
                 embedding_time = embedding_end - local_start
                 total_time = local_end - local_start
-                f.write(f"{roc_auc},{pr_auc},{embedding_time},{total_time},{embedding_hp_set},\"{method_hp_set}\"\n")
+                f.write(f"{roc_auc},{test_roc_auc},{pr_auc},{test_pr_auc},{embedding_time},{total_time},{embedding_hp_set},\"{method_hp_set}\"\n")
             if pr_auc>best_pr_auc:
                 best_pr_auc = pr_auc
                 best_hyperparameters = (embedding_hp_set, method_hp_set)
@@ -261,6 +293,8 @@ def main(args: argparse.ArgumentParser):
                     os.remove(args.logdir+"/preds.pt")
                 torch.save(preds, args.logdir+"/preds.pt")
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             print(f"Exception {e.__class__} occured with hyperparameters: {embedding_hp_set} {method_hp_set}")
     print(best_hyperparameters)
 
@@ -293,7 +327,10 @@ if __name__ == '__main__':
                         type=str, help="Path to the JSON file containing hyperparameter ranges" \
                         "for each method.")
     parser.add_argument("--logdir", type=str, default="logs", help="Default directory for storing logs.")
-    parser.add_argument("--time_limit", type=int, default=3600,
+    parser.add_argument("--time_limit", type=int, default=6000,
                         help="Maximum time in seconds to spend on hyperparameter tuning.")
+    parser.add_argument("--imbalance", type=str, default="none", choices=["none", "weight", \
+        "random_oversampling", "random_undersampling", "SMOTE", "tomek_links"], \
+        help="Strategies to handle imbalance.")
     args = parser.parse_args([] if "__file__" not in globals() else None)
     main(args)

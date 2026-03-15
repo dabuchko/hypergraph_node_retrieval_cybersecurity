@@ -17,9 +17,9 @@
         "walk_length": [8, 16, 32],
         "context_size": [2, 3, 4],
         "walks_per_node": [1, 2, 4, 8],
-        "p": [0.1, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2, 4, 8, 16],
-        "q": [0.1, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2, 4, 8, 16],
-        "num_negative_samples": [1, 2, 4, 8, 16],
+        "p": [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2, 4],
+        "q": [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2, 4],
+        "num_negative_samples": [1, 2, 4, 8],
         "sparse": [true]
     },
     "Logistic Regression": {
@@ -36,24 +36,24 @@
         "metric": ["cosine", "l1", "l2"]
     },
     "GCN": {
-        "hidden_channels": [4, 8, 16, 32, 64, 128, 256],
+        "hidden_channels": [8, 16, 32, 64, 128],
         "num_layers": [1, 2, 3, 4],
         "dropout": [0.0, 0.2, 0.4, 0.6, 0.8]
     },
     "GAT": {
-        "hidden_channels": [4, 8, 16, 32, 64, 128, 256],
+        "hidden_channels": [8, 16, 32, 64, 128],
         "num_layers": [1, 2, 3, 4],
         "dropout": [0.0, 0.2, 0.4, 0.6, 0.8],
-        "heads": [4],
+        "heads": [1, 2, 4, 8],
         "add_self_loops": [false, true]
     },
     "GIN": {
-        "hidden_channels": [4, 8, 16, 32, 64, 128, 256],
+        "hidden_channels": [8, 16, 32, 64, 128],
         "num_layers": [1, 2, 3, 4],
         "dropout": [0.0, 0.2, 0.4, 0.6, 0.8]
     },
     "GraphSAGE": {
-        "hidden_channels": [4, 8, 16, 32, 64, 128, 256],
+        "hidden_channels": [8, 16, 32, 64, 128],
         "num_layers": [1, 2, 3, 4],
         "dropout": [0.0, 0.2, 0.4, 0.6, 0.8],
         "aggr": ["mean", "max"],
@@ -67,7 +67,7 @@
         "num_layers": [1, 2, 3, 4]
     },
     "HGNN": {
-        "hidden_channels": [4, 8, 16, 32, 64, 128, 256],
+        "hidden_channels": [8, 16, 32, 64, 128],
         "num_layers": [1, 2, 3, 4],
         "dropout": [0.0, 0.2, 0.4, 0.6, 0.8],
         "bias": [false, true]
@@ -79,16 +79,96 @@
         "bias": [false, true]
     },
     "HyperGCN": {
-        "hidden_channels": [4, 8, 16, 32, 64, 128, 256],
+        "hidden_channels": [8, 16, 32, 64, 128],
         "num_layers": [1, 2],
         "dropout": [0.0, 0.2, 0.4, 0.6, 0.8],
         "bias": [false, true]
     },
-    "UniGAT": {
-        "hidden_channels": [4, 8, 16, 32, 64],
+    "UniGCN": {
+        "hidden_channels": [8, 16, 32, 64, 128],
         "num_layers": [1, 2],
         "dropout": [0.0, 0.2, 0.4, 0.6, 0.8],
         "hyperedge_aggr": ["sum", "mean"],
-        "bias": [false, true]
+        "bias": [false, true],
+        "act": [null, "tanh", "relu"]
+    },
+    "UniGAT": {
+        "hidden_channels": [8, 16, 32, 64, 128],
+        "num_layers": [1, 2],
+        "dropout": [0.0, 0.2, 0.4, 0.6, 0.8],
+        "hyperedge_aggr": ["sum", "mean"],
+        "bias": [false, true],
+        "act": [null, "tanh", "relu"]
+    },
+    "UniGIN": {
+        "hidden_channels": [8, 16, 32, 64, 128],
+        "num_layers": [1, 2],
+        "dropout": [0.0, 0.2, 0.4, 0.6, 0.8],
+        "hyperedge_aggr": ["sum", "mean"],
+        "bias": [false, true],
+        "act": [null, "tanh", "relu"]
+    },
+    "UniSAGE": {
+        "hidden_channels": [8, 16, 32, 64, 128],
+        "num_layers": [1, 2],
+        "dropout": [0.0, 0.2, 0.4, 0.6, 0.8],
+        "sage_aggr": ["max", "mean"],
+        "hyperedge_aggr": ["sum", "mean"],
+        "bias": [false, true],
+        "act": [null, "tanh", "relu"]
+    },
+    "UniGCNII": {
+        "hidden_channels": [8, 16, 32, 64, 128],
+        "alpha": [0.0, 0.25, 0.5, 0.75, 1.0],
+        "beta": [0.0, 0.25, 0.5, 0.75, 1.0],
+        "num_layers": [1, 2],
+        "dropout": [0.0, 0.2, 0.4, 0.6, 0.8],
+        "hyperedge_aggr": ["sum", "mean"],
+        "bias": [false, true],
+        "act": [null, "tanh", "relu"]
+    },
+    "AllDeepSets": {
+        "hidden_channels": [8, 16, 32, 64, 128],
+        "num_layers": [1, 2, 3, 4],
+        "dropout": [0.0, 0.2, 0.4, 0.6, 0.8],
+        "classifier_hidden": [8, 16, 32, 64, 128],
+        "classifier_num_layers": [1, 2, 3, 4],
+        "normalization": ["ln", "bn", "None"],
+        "deepset_input_norm": [false, true],
+        "GPR": [false, true]
+    },
+    "AllSetTransformer": {
+        "hidden_channels": [8, 16, 32, 64, 128],
+        "num_layers": [1, 2, 3, 4],
+        "dropout": [0.0, 0.2, 0.4, 0.6, 0.8],
+        "classifier_hidden": [8, 16, 32, 64, 128],
+        "classifier_num_layers": [1, 2, 3, 4],
+        "aggregate": ["sum", "mean"],
+        "normalization": ["ln", "bn", "None"],
+        "deepset_input_norm": [false, true],
+        "GPR": [false, true],
+        "heads": [1, 2, 4, 8]
+    },
+    "HNHN": {
+        "hidden_channels": [8, 16, 32, 64, 128],
+        "num_layers": [1, 2, 3, 4],
+        "dropout": [0.0, 0.2, 0.4, 0.6, 0.8],
+        "heads": [1, 2, 4, 8],
+        "nonlinear_inbetween": [false, true],
+        "alpha": [0.0, 0.5, 1.0, 2.0],
+        "beta": [0.0, 0.5, 1.0, 2.0]
+    },
+    "HyperSAGE": {
+        "hidden_channels": [8, 16, 32, 64, 128],
+        "p": [-1, 0.01, 0.5, 1.0, 2.0],
+        "num_layers": [1, 2, 3, 4],
+        "dropout": [0.0, 0.2, 0.4, 0.6, 0.8],
+        "num_neighbors": [256, 512, 1024, 2048]
+    },
+    "MaxSum": {
+        "hidden_channels": [8, 16, 32, 64, 128, 256],
+        "num_layers": [1, 2, 3, 4],
+        "dropout": [0.0, 0.2, 0.4, 0.6, 0.8],
+        "num_neighbors": [256, 512, 1024, 2048]
     }
 }

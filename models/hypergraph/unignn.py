@@ -1,16 +1,198 @@
-from torch.nn import Module
+import torch
+from torch import Tensor, ones
+from .basic_hgnn import BasicHGNN
+from torch_geometric.nn.conv import MessagePassing
+from torch_geometric.utils import scatter
 
-class UniGCN(Module):
-    pass
+class HyperedgeAggregation(MessagePassing):
+    def __init__(self, aggr="mean", aggr_kwargs=None, flow="source_to_target", node_dim=-2, decomposed_layers=1):
+        super().__init__(aggr, aggr_kwargs=aggr_kwargs, flow=flow, node_dim=node_dim, decomposed_layers=decomposed_layers)
+    def forward(self, x: Tensor, hyperedge_index: Tensor, size=None):
+        return self.propagate(hyperedge_index, x=x, size=size)
 
-class UniGAT(Module):
-    pass
+class UniGCNConv(MessagePassing):
+    def __init__(self, in_channels: int, out_channels: int, hyperedge_aggr="mean", bias: bool = False):
+        super().__init__(hyperedge_aggr, aggr_kwargs=None, flow="source_to_target", node_dim=-2, decomposed_layers=1)
+        self.lin = torch.nn.Linear(in_channels, out_channels, bias=bias)
+        self.hyperedge_aggr = hyperedge_aggr
+        assert hyperedge_aggr=="mean" or hyperedge_aggr=="sum"
+        
+    def forward(self, x: Tensor, hyperedge_index: Tensor):
+        if len(x.shape)<2:
+            x = x[:, None]
+        # calculate the number of nodes and edges
+        num_nodes = x.size(0)
+        num_edges = 0
+        if hyperedge_index.numel() > 0:
+            num_edges = int(hyperedge_index[1].max()) + 1
 
-class UniGIN(Module):
-    pass
+        D = scatter(ones([hyperedge_index.size(1)], device=hyperedge_index.device), hyperedge_index[0],
+                    dim=0, dim_size=num_nodes, reduce='sum')
 
-class UniSAGE(Module):
-    pass
+        B = scatter(D[hyperedge_index[0]], hyperedge_index[1],
+                    dim=0, dim_size=num_edges, reduce='mean')
+        D = 1.0 / torch.sqrt(D+1)
+        D[D == float("inf")] = 0
+        B = 1.0 / torch.sqrt(B)
+        B[B == float("inf")] = 0
 
-class UniGCNII(Module):
-    pass
+        out = self.propagate(hyperedge_index, x=x, size=(num_nodes, num_edges))
+        out = self.lin(out)
+        out *= B[:, None]
+        out = self.propagate(hyperedge_index.flip([0]), x=out, size=(num_edges, num_nodes))
+        if self.hyperedge_aggr=="mean":
+            out /= D[:, None]
+            out += self.lin(x) * (D**2)[:, None] # self loops
+        elif self.hyperedge_aggr=="sum":
+            out += self.lin(x) * D[:, None] # self loops
+            out *= D[:, None]
+        return out
+
+class UniGCN(BasicHGNN):
+    supports_hyperedge_weight = False
+    supports_hyperedge_attr = False
+
+    def init_conv(self, in_channels: int, out_channels: int, hyperedge_aggr="mean", bias: bool = False, **kwargs):
+        return UniGCNConv(in_channels, out_channels, hyperedge_aggr, bias)
+
+class UniGATConv(MessagePassing):
+    def __init__(self, in_channels: int, out_channels: int, hyperedge_aggr="mean", bias: bool = False, negative_slope: float = 0.01):
+        super().__init__(hyperedge_aggr, aggr_kwargs=None, flow="source_to_target", node_dim=-2, decomposed_layers=1)
+        self.lin = torch.nn.Linear(in_channels, out_channels, bias=bias)
+        self.a = torch.nn.Parameter(torch.empty((out_channels*2,)))
+        torch.nn.init.uniform_(self.a)
+        self.negative_slope = negative_slope
+        
+    def forward(self, x: Tensor, hyperedge_index: Tensor):
+        if len(x.shape)<2:
+            x = x[:, None]
+        # calculate the number of nodes and edges
+        num_nodes = x.size(0)
+        num_edges = 0
+        if hyperedge_index.numel() > 0:
+            num_edges = int(hyperedge_index[1].max()) + 1
+        x = self.lin(x)
+        out = self.propagate(hyperedge_index, x=x, size=(num_nodes, num_edges))
+        x_att = (x * self.a[:out.shape[1]][None, :]).sum(1)
+        out_att = (out * self.a[out.shape[1]:][None, :]).sum(1)
+        att = torch.nn.functional.leaky_relu(x_att[hyperedge_index[0]] + out_att[hyperedge_index[1]], self.negative_slope)
+        att_self = torch.nn.functional.leaky_relu(x_att*2, self.negative_slope)
+        att = att - max(att.max(), att_self.max())
+        att = torch.exp(att)
+        att_self = torch.exp(att_self)
+        att_sum = scatter(att, hyperedge_index[0], dim=0, dim_size=num_nodes, reduce='sum') + att_self
+        att = att / att_sum[hyperedge_index[0]]
+        att_self = att_self / att_sum
+        res = att_self[:, None] * x
+        step = 3000
+        for i in range(0, hyperedge_index.shape[1], step):
+            res += scatter(att[i:i+step][:, None] * out[hyperedge_index[1,i:i+step]], hyperedge_index[0, i:i+step], dim=0, dim_size=num_nodes, reduce='sum')
+        return res
+
+class UniGAT(BasicHGNN):
+    supports_hyperedge_weight = False
+    supports_hyperedge_attr = False
+
+    def init_conv(self, in_channels: int, out_channels: int, hyperedge_aggr="mean", bias: bool = False, **kwargs):
+        return UniGATConv(in_channels, out_channels, hyperedge_aggr, bias)
+
+class UniGINConv(MessagePassing):
+    def __init__(self, in_channels: int, out_channels: int, hyperedge_aggr="mean", bias: bool = False):
+        super().__init__("sum", aggr_kwargs=None, flow="source_to_target", node_dim=-2, decomposed_layers=1)
+        self.hyperedge_aggr = HyperedgeAggregation(hyperedge_aggr)
+        self.lin = torch.nn.Linear(in_channels, out_channels, bias=bias)
+        self.eps = torch.nn.Parameter(torch.rand(1))
+        
+    def forward(self, x: Tensor, hyperedge_index: Tensor):
+        if len(x.shape)<2:
+            x = x[:, None]
+        # calculate the number of nodes and edges
+        num_nodes = x.size(0)
+        num_edges = 0
+        if hyperedge_index.numel() > 0:
+            num_edges = int(hyperedge_index[1].max()) + 1
+
+        out = self.hyperedge_aggr(x, hyperedge_index, (num_nodes, num_edges))
+        out = self.propagate(hyperedge_index.flip([0]), x=out, size=(num_edges, num_nodes))
+        out += x * (1 + self.eps)
+        out = self.lin(out)
+        return out
+
+class UniGIN(BasicHGNN):
+    supports_hyperedge_weight = False
+    supports_hyperedge_attr = False
+
+    def init_conv(self, in_channels: int, out_channels: int, hyperedge_aggr="mean", bias: bool = False, **kwargs):
+        return UniGINConv(in_channels, out_channels, hyperedge_aggr, bias)
+
+class UniSAGEConv(MessagePassing):
+    def __init__(self, in_channels: int, out_channels: int, sage_aggr="max", hyperedge_aggr="mean", bias: bool = False):
+        super().__init__(sage_aggr, aggr_kwargs=None, flow="source_to_target", node_dim=-2, decomposed_layers=1)
+        self.hyperedge_aggr = HyperedgeAggregation(hyperedge_aggr)
+        self.lin = torch.nn.Linear(in_channels, out_channels, bias=bias)
+        
+    def forward(self, x: Tensor, hyperedge_index: Tensor):
+        if len(x.shape)<2:
+            x = x[:, None]
+        # calculate the number of nodes and edges
+        num_nodes = x.size(0)
+        num_edges = 0
+        if hyperedge_index.numel() > 0:
+            num_edges = int(hyperedge_index[1].max()) + 1
+
+        out = self.hyperedge_aggr(x, hyperedge_index, (num_nodes, num_edges))
+        out = self.propagate(hyperedge_index.flip([0]), x=out, size=(num_edges, num_nodes))
+        out += x
+        out = self.lin(out)
+        return out
+
+class UniSAGE(BasicHGNN):
+    supports_hyperedge_weight = False
+    supports_hyperedge_attr = False
+
+    def init_conv(self, in_channels: int, out_channels: int, sage_aggr="max", hyperedge_aggr="mean", bias: bool = False):
+        return UniSAGEConv(in_channels, out_channels, sage_aggr, hyperedge_aggr, bias)
+
+class UniGCNIIConv(MessagePassing):
+    def __init__(self, in_channels: int, out_channels: int, alpha: float = 0.0, beta: float = 1.0, hyperedge_aggr="mean"):
+        super().__init__("sum", aggr_kwargs=None, flow="source_to_target", node_dim=-2, decomposed_layers=1)
+        self._W = torch.nn.Parameter(torch.empty((in_channels, out_channels)))
+        torch.nn.init.xavier_uniform_(self._W)
+        self.hyperedge_aggr = HyperedgeAggregation(hyperedge_aggr)
+        assert hyperedge_aggr=="mean" or hyperedge_aggr=="sum"
+        self.alpha = alpha
+        self.beta = beta
+        
+    def forward(self, x: Tensor, hyperedge_index: Tensor):
+        if len(x.shape)<2:
+            x = x[:, None]
+        # calculate the number of nodes and edges
+        num_nodes = x.size(0)
+        num_edges = 0
+        if hyperedge_index.numel() > 0:
+            num_edges = int(hyperedge_index[1].max()) + 1
+
+        D = scatter(ones([hyperedge_index.size(1)], device=hyperedge_index.device), hyperedge_index[0],
+                    dim=0, dim_size=num_nodes, reduce='sum')
+
+        B = scatter(D[hyperedge_index[0]], hyperedge_index[1],
+                    dim=0, dim_size=num_edges, reduce='mean')
+        D = 1.0 / torch.sqrt(D+1)
+        D[D == float("inf")] = 0
+        B = 1.0 / torch.sqrt(B)
+        B[B == float("inf")] = 0
+
+        out = self.hyperedge_aggr(x, hyperedge_index, (num_nodes, num_edges))
+        out *= B[:, None]
+        out = self.propagate(hyperedge_index.flip([0]), x=out, size=(num_edges, num_nodes))
+        out *= D[:, None]
+        out = ((1 - self.alpha) * out) + (self.alpha * x)
+        weight = self._W + torch.eye(self._W.shape[0], self._W.shape[1], device=self._W.device)
+        return out @ weight
+
+class UniGCNII(BasicHGNN):
+    supports_hyperedge_weight = False
+    supports_hyperedge_attr = False
+
+    def init_conv(self, in_channels: int, out_channels: int, alpha: float = 0.0, beta: float = 1.0, hyperedge_aggr="mean", **kwargs):
+        return UniGCNIIConv(in_channels, out_channels, alpha, beta, hyperedge_aggr)

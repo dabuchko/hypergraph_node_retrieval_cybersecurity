@@ -51,11 +51,11 @@ class MatrixFactorization(torch.nn.Module):
         :type column_weights: torch.Tensor
         """
         if column_weights==None:
-            column_weights = torch.ones((x.shape[1],), dtype=torch.float)
+            column_weights = torch.ones((x.shape[1],), dtype=torch.float, device=x.device)
         column_weights = column_weights.reshape(1, -1)
         # initialize factors
-        P = torch.empty((x.shape[0], self.dim), dtype=torch.float)
-        Q = torch.empty((x.shape[1], self.dim), dtype=torch.float)
+        P = torch.empty((x.shape[0], self.dim), dtype=torch.float, device=x.device)
+        Q = torch.empty((x.shape[1], self.dim), dtype=torch.float, device=x.device)
         torch.nn.init.xavier_uniform_(P)
         torch.nn.init.xavier_uniform_(Q)
         P_old = P.clone()

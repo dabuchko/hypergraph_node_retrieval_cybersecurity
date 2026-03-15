@@ -15,16 +15,6 @@ class CSPConv(MessagePassing):
         if hyperedge_index.numel() > 0:
             num_edges = int(hyperedge_index[1].max()) + 1
 
-        D = scatter(ones([hyperedge_index.size(1)]), hyperedge_index[0],
-                    dim=0, dim_size=num_nodes, reduce='sum')
-        D = 1.0 / D
-        D[D == float("inf")] = 0
-
-        B = scatter(x.new_ones(hyperedge_index.size(1)), hyperedge_index[1],
-                    dim=0, dim_size=num_edges, reduce='sum')
-        B = 1.0 / B
-        B[B == float("inf")] = 0
-
         out = self.propagate(hyperedge_index, x=x, size=(num_nodes, num_edges))
         out = self.propagate(hyperedge_index.flip([0]), x=out, size=(num_edges, num_nodes))
         return out

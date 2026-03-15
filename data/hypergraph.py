@@ -149,7 +149,9 @@ class Hypergraph:
         if self.hyperedge_weight!=None:
             return torch.sparse_coo_tensor(self.hyperedge_index, self.hyperedge_weight[self.hyperedge_index[1]], (self.num_nodes, self.num_edges))
         else:
-            return torch.sparse_coo_tensor(self.hyperedge_index, torch.ones((self.hyperedge_index.shape[1],)), (self.num_nodes, self.num_edges))
+            return torch.sparse_coo_tensor(self.hyperedge_index,
+                                           torch.ones((self.hyperedge_index.shape[1],), device=self.hyperedge_index.device),
+                                           (self.num_nodes, self.num_edges))
     
     def clique_graph(self) -> Data:
         """
@@ -184,7 +186,7 @@ class Hypergraph:
         """
         edge_index = self.hyperedge_index.clone()
         if self.hyperedge_weight==None:
-            edge_index_weights = torch.ones((edge_index.shape[1],))
+            edge_index_weights = torch.ones((edge_index.shape[1],), device=edge_index.device)
         else:
             edge_index_weights = self.hyperedge_weight[edge_index[1]]
         edge_index_swapped = torch.empty_like(edge_index)
