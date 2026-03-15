@@ -12,6 +12,7 @@ from time import time
 
 import torch
 import torch_geometric
+import numpy as np
 
 from data import *
 from models import *
@@ -213,7 +214,7 @@ def main(args: argparse.ArgumentParser):
                 train_y = data.y[data.train_mask].cpu().numpy()
                 method = FEATURE_METHODS[args.feature_based](**method_hp_set)
                 if args.imbalance=="weight":
-                    weights = train_x.new_ones((train_x.shape[0],))
+                    weights = np.ones((train_x.shape[0],), dtype=float)
                     weights[train_y[:, 0]==1] = weight_true_class
                     method.fit(train_x, train_y, weights)
                 else:
