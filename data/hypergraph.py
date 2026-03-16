@@ -175,9 +175,7 @@ class Hypergraph:
         :rtype: Data
         """
         edge_index = self.hyperedge_index.clone()
-        if self.hyperedge_weight==None:
-            edge_index_weights = torch.ones((edge_index.shape[1],), device=edge_index.device)
-        else:
+        if self.hyperedge_weight!=None:
             edge_index_weights = self.hyperedge_weight[edge_index[1]]
         edge_index_swapped = torch.empty_like(edge_index)
         edge_index_swapped[0] = edge_index[1]
@@ -193,11 +191,12 @@ class Hypergraph:
             }
         )
         hetero_data['hypergraph_nodes', 'in', 'hypergraph_edges'].edge_index = edge_index
-        hetero_data['hypergraph_nodes', 'in', 'hypergraph_edges'].edge_weight = edge_index_weights
         hetero_data['hypergraph_nodes', 'in', 'hypergraph_edges'].num_edges = edge_index.shape[1]
         hetero_data['hypergraph_edges', 'include', 'hypergraph_nodes'].edge_index = edge_index_swapped
-        hetero_data['hypergraph_edges', 'include', 'hypergraph_nodes'].edge_weight = edge_index_weights
         hetero_data['hypergraph_edges', 'include', 'hypergraph_nodes'].num_edges = edge_index.shape[1]
+        if self.hyperedge_weight!=None:
+            hetero_data['hypergraph_nodes', 'in', 'hypergraph_edges'].edge_weight = edge_index_weights
+            hetero_data['hypergraph_edges', 'include', 'hypergraph_nodes'].edge_weight = edge_index_weights
         hetero_data.num_nodes = self.num_nodes + self.num_edges
         return hetero_data
     
