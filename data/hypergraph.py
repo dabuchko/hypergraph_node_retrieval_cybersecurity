@@ -153,11 +153,11 @@ class Hypergraph:
         during the corresponding operations.
         :rtype: Data
         """
-        sparse_inc = self.sparse_incidence_matrix().float() ** 0.5
+        sparse_inc = self.sparse_incidence_matrix().float()
+        torch.pow(sparse_inc._values().data, 0.5, out=sparse_inc._values().data)
         weight_matrix = torch.sparse.mm(sparse_inc, sparse_inc.T)
         weight_matrix.values()[weight_matrix.indices()[0]==weight_matrix.indices()[1]] = 0
-        edge_index = weight_matrix.indices()
-        return Data(edge_index=edge_index, edge_weight=weight_matrix.values(),
+        return Data(edge_index=weight_matrix.indices(), edge_weight=weight_matrix.values(),
                     y=self.y, train_mask=self.train_mask, val_mask=self.val_mask,
                     test_mask=self.test_mask, num_nodes=self.num_nodes)
 
@@ -174,7 +174,7 @@ class Hypergraph:
         and `test_mask` masks.
         :rtype: Data
         """
-        edge_index = self.hyperedge_index.clone()
+        edge_index = self.hyperedge_index.clone().to(torch.int32)
         if self.hyperedge_weight!=None:
             edge_index_weights = self.hyperedge_weight[edge_index[1]]
         edge_index_swapped = torch.empty_like(edge_index)

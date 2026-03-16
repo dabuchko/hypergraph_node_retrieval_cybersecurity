@@ -51,8 +51,9 @@ class MatrixFactorization(torch.nn.Module):
         :type column_weights: torch.Tensor
         """
         if column_weights==None:
-            column_weights = torch.ones((x.shape[1],), dtype=torch.float, device=x.device)
-        column_weights = column_weights.reshape(1, -1)
+            column_weights = 1.0
+        else:
+            column_weights = column_weights.to(torch.float).reshape(1, -1)
         # initialize factors
         P = torch.empty((x.shape[0], self.dim), dtype=torch.float, device=x.device)
         Q = torch.empty((x.shape[1], self.dim), dtype=torch.float, device=x.device)
@@ -65,8 +66,7 @@ class MatrixFactorization(torch.nn.Module):
         Q_old.fill_(torch.inf)
         delta = self.delta
         iteration = 0
-        x = x.bool().float() # leave only 0/1 values
-        column_weights = column_weights.float()
+        x = x.to(torch.bool).to(torch.float) # leave only 0/1 values
 
         # compute P and Q through multiple iterations until maximum number
         # of iterations is performed or any of the factors changed by value smaller than delta
