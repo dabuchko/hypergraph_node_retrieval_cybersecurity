@@ -14,7 +14,7 @@ class SpamAssassinDataset(Hypergraph):
                                      token_pattern=None, binary=True)
         X = vectorizer.fit_transform(ds["train"]["text"])
         rows, cols = X.nonzero()
-        hyperedge_index = torch.vstack((torch.tensor(rows), torch.tensor(cols)))
+        hyperedge_index = torch.vstack((torch.tensor(rows).long(), torch.tensor(cols).long()))
         # generate mask
         mask = torch.rand((labels.shape[0],))
         train_mask = mask < train_size
