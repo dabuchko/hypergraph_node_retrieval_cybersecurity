@@ -79,16 +79,6 @@ class Hypergraph:
             raise ValueError(f"Validation mask must be a boolean vector, obtained tensor with data type {val_mask.dtype} and shape {val_mask.shape}")
         if test_mask!=None and (test_mask.dtype!=torch.bool or len(test_mask.shape)!=1):
             raise ValueError(f"Test mask must be a boolean vector, obtained tensor with data type {test_mask.dtype} and shape {test_mask.shape}")
-        # verify uniqueness of 'hyperedge_index' pairs
-        pairs = set()
-        for i in range(hyperedge_index.shape[1]):
-            node = int(hyperedge_index[0, i].item())
-            hyperedge = int(hyperedge_index[1, i].item())
-            pair = (node, hyperedge)
-            if pair in pairs:
-                raise "The provided 'hyperedge_index' include duplicated values. Please provide unique pairs for consistency."
-            pairs.add(pair)
-        del pairs # freeing memory
 
         # setting the number of nodes and edges
         self.num_nodes = int(hyperedge_index[0].max().item()) + 1
