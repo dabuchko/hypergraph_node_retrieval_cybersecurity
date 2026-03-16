@@ -13,7 +13,6 @@ class MH1MDataset(Hypergraph):
         labels = torch.from_numpy(
             np.loadtxt(kagglehub.dataset_download(path, "labels.csv"), dtype=np.bool_)
         )
-        labels = torch.from_numpy(labels)
         # generate mask
         mask = torch.rand((labels.shape[0],))
         train_mask = mask < train_size
