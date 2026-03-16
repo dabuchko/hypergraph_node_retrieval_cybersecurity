@@ -10,11 +10,10 @@ class MH1MDataset(Hypergraph):
         data = np.loadtxt(path + "/hyperedges.csv", delimiter=",", dtype=np.int32)
         hyperedge_index = torch.from_numpy(data).T
         # load labels
-        labels = torch.zeros((hyperedge_index[0].max()+1,), dtype=bool)
-        with open(path+"/classes.csv", 'r') as f:
-            for line in f:
-                line = line.strip()
-                labels[int(line)] = True
+        labels = torch.from_numpy(
+            np.loadtxt(kagglehub.dataset_download(path, "labels.csv"), dtype=np.bool_)
+        )
+        labels = torch.from_numpy(labels)
         # generate mask
         mask = torch.rand((labels.shape[0],))
         train_mask = mask < train_size
