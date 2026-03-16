@@ -70,7 +70,7 @@ def train_GNN(model, graph, patience: int = 0, delta: float = 0.0, weight=None):
         else:
             current_patience = patience
         last_loss = min(loss.item(), last_loss)
-    preds = preds.detach()[graph.val_mask]
+    preds = preds.detach()
     return preds[:, 0]
 
 def train_GNN_batches(model, graph, num_neighbors:int = 3, patience: int = 0, delta: float = 0.0, batch_size: int = 512, weight=None):
@@ -115,7 +115,7 @@ def train_GNN_batches(model, graph, num_neighbors:int = 3, patience: int = 0, de
             current_patience = patience
         last_loss = min(loss.item(), last_loss)
         print(loss.item())
-    preds = preds.detach()[graph.val_mask]
+    preds = preds.detach()
     return preds[:, 0]
 
 
