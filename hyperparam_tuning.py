@@ -122,11 +122,12 @@ def main(args: argparse.ArgumentParser):
         device = torch.device("cpu")
     
     # create dataset
-    data = DATASETS[args.dataset]().to(device)
+    data = DATASETS[args.dataset]()
     weight_true_class = None
     if args.imbalance=="weight":
         weight_true_class = data.y.sum().float()
         weight_true_class /= data.y.shape[0] - weight_true_class
+        weight_true_class = weight_true_class.to(device)
 
     # load hyperparameters ranges
     try:
@@ -192,16 +193,19 @@ def main(args: argparse.ArgumentParser):
                     if isinstance(embedding_class, RandomGaussian):
                         x = embedding_class(data.num_nodes)
                     elif isinstance(embedding_class, MatrixFactorization):
-                        P, Q = embedding_class(data.sparse_incidence_matrix(), data.hyperedge_weight)
+                        hyperedge_weight = data.hyperedge_weight.to(device)
+                        P, Q = embedding_class(data.sparse_incidence_matrix().to(device), hyperedge_weight)
                         x = torch.cat([P, Q], 0)
                     elif isinstance(embedding_class, SpectralEmbedding):
                         x = embedding_class(embedding_graph.edge_index.cpu(), embedding_graph.edge_weight.cpu())
-                    x = x.float().to(device)
+                    x = x.to(torch.float).to(device)
+                if embedding_graph!=None:
+                    del embedding_graph
             elif args.graph_based=="CSP":
-                x = data.y.clone()
+                x = data.y.clone().to(device)
                 x[~graph.train_mask] = 0 # consider only training labels
             elif args.graph_based=="Label Propagation":
-                x = graph.y.clone()
+                x = graph.y.clone().to(device)
                 x[~graph.train_mask] = 0 # consider only training labels
             
             
@@ -232,7 +236,7 @@ def main(args: argparse.ArgumentParser):
                 preds = GRAPH_METHODS[args.graph_based](**method_hp_set)(x, graph.edge_index, edge_weight=graph.edge_weight)
                 preds = preds[:data.num_nodes].cpu()
             elif args.graph_based=="CSP":
-                preds = HYPERGRAPH_METHODS[args.graph_based](**method_hp_set)(x, data.hyperedge_index).cpu()
+                preds = HYPERGRAPH_METHODS[args.graph_based](**method_hp_set)(x, data.hyperedge_index.to(device)).cpu()
             elif args.graph_based in GRAPH_METHODS:
                 if x!=None:
                     if args.graph_repr_GNN=="incidence":
@@ -264,11 +268,11 @@ def main(args: argparse.ArgumentParser):
                     method_hp_set_copy = method_hp_set.copy()
                     del method_hp_set_copy["num_neighbors"]
                     model = HYPERGRAPH_METHODS[args.graph_based](**method_hp_set_copy).to(device)
-                    preds = train_HGNN_batches(model, data, x, method_hp_set["num_neighbors"], hyperedge_attr,
+                    preds = train_HGNN_batches(model, data.to(device), x, method_hp_set["num_neighbors"], hyperedge_attr,
                                                args.patience, args.delta, weight_true_class).cpu()
                 else:
                     model = HYPERGRAPH_METHODS[args.graph_based](**method_hp_set).to(device)
-                    preds = train_HGNN(model, data, x, hyperedge_attr, args.patience, args.delta, weight_true_class).cpu()
+                    preds = train_HGNN(model, data.to(device), x, hyperedge_attr, args.patience, args.delta, weight_true_class).cpu()
             else:
                 raise "Unexpected set. Feature method is not set and graph/hypergraph method is unknown."
                 
