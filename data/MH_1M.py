@@ -11,7 +11,7 @@ class MH1MDataset(Hypergraph):
         hyperedge_index = torch.from_numpy(data).T
         # load labels
         labels = torch.from_numpy(
-            np.loadtxt(path + "/labels.csv", dtype=np.bool_)
+            np.loadtxt(path + "/classes.csv", dtype=np.bool_)
         )
         # generate mask
         mask = torch.rand((labels.shape[0],))
