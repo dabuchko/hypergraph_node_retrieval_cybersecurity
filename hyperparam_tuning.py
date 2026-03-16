@@ -324,7 +324,7 @@ if __name__ == '__main__':
     parser.add_argument("--num_workers", default=4, type=int, help="Number of workers to be used in dataloaders.")
     parser.add_argument("--threads", default=16, type=int, help="Maximum number of threads to use.")
     parser.add_argument("--batch_size", default=2048, type=int, help="Batch size.")
-    parser.add_argument("--hyperparam_ranges", default="hyperparam_ranges.json",
+    parser.add_argument("--hyperparam_ranges", default="",
                         type=str, help="Path to the JSON file containing hyperparameter ranges" \
                         "for each method.")
     parser.add_argument("--logdir", type=str, default="logs", help="Default directory for storing logs.")
@@ -334,4 +334,9 @@ if __name__ == '__main__':
         "random_oversampling", "random_undersampling", "SMOTE", "tomek_links"], \
         help="Strategies to handle imbalance.")
     args = parser.parse_args([] if "__file__" not in globals() else None)
+    if args.hyperparam_ranges=="":
+        if args.dataset=="CiscoEmail" or args.dataset=="SpamAssassin":
+            args.hyperparam_ranges = "hyperparam_ranges_s.json"
+        else:
+            args.hyperparam_ranges = "hyperparam_ranges_l.json"
     main(args)
