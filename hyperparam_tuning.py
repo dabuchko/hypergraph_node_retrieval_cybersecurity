@@ -174,9 +174,9 @@ def main(args: argparse.ArgumentParser):
                     graph = embedding_graph
                 else:
                     if args.graph_repr_GNN=="incidence":
-                        graph = data.incidence_graph().to_homogeneous().to(device)
+                        graph = data.incidence_graph().to_homogeneous()
                     elif args.graph_repr_GNN=="clique":
-                        graph = data.clique_graph().to(device)
+                        graph = data.clique_graph()
                     graph.y = graph.y.float()[:, None]
 
 
@@ -186,14 +186,16 @@ def main(args: argparse.ArgumentParser):
                     embedding_hp_set["edge_index"] = embedding_graph.edge_index
                     embedding_hp_set["num_nodes"] = embedding_graph.num_nodes
                     node2vec = EMBEDDING_METHODS[args.embedding](**embedding_hp_set).to(device)
-                    del embedding_hp_set["edge_index"]
+                    del embedding_hp_set["edge_index"].detach().cpu()
                     x = fit_transform_node2vec(node2vec, args.patience, args.delta, args.batch_size, args.num_workers)
                 else:
                     embedding_class = EMBEDDING_METHODS[args.embedding](**embedding_hp_set)
                     if isinstance(embedding_class, RandomGaussian):
                         x = embedding_class(data.num_nodes)
                     elif isinstance(embedding_class, MatrixFactorization):
-                        hyperedge_weight = data.hyperedge_weight.to(device)
+                        hyperedge_weight = None
+                        if data.hyperedge_weight!=None:
+                            hyperedge_weight = data.hyperedge_weight.to(device)
                         P, Q = embedding_class(data.sparse_incidence_matrix().to(device), hyperedge_weight)
                         x = torch.cat([P, Q], 0)
                     elif isinstance(embedding_class, SpectralEmbedding):
@@ -202,14 +204,18 @@ def main(args: argparse.ArgumentParser):
                 if embedding_graph!=None:
                     del embedding_graph
             elif args.graph_based=="CSP":
-                x = data.y.clone().to(device)
-                x[~graph.train_mask] = 0 # consider only training labels
+                x = data.y.clone()
+                x[~data.train_mask] = 0 # consider only training labels
+                x = x.to(device)
             elif args.graph_based=="Label Propagation":
-                x = graph.y.clone().to(device)
+                x = graph.y.clone()
                 x[~graph.train_mask] = 0 # consider only training labels
+                x = x.to(device)
             
             
             embedding_end = time()
+            if graph!=None:
+                graph = graph.to(device)
             # train methods on embeddings (if any) and generate predictions 'preds'
             print("embedding done")
             if features_set:
