@@ -200,6 +200,9 @@ def main(args: argparse.ArgumentParser):
                         P, Q = embedding_class(data.sparse_incidence_matrix().to(device), hyperedge_weight)
                         x = torch.cat([P, Q], 0)
                     elif isinstance(embedding_class, SpectralEmbedding):
+                        hyperedge_weight = None
+                        if data.hyperedge_weight!=None:
+                            hyperedge_weight = data.hyperedge_weight.to(device)
                         x = embedding_class(embedding_graph.edge_index.cpu(), embedding_graph.edge_weight.cpu())
                     x = x.to(torch.float).to(device)
                 if embedding_graph!=None:
