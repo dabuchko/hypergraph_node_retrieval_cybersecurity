@@ -282,6 +282,9 @@ def main(args: argparse.ArgumentParser):
                     preds = train_HGNN(model, data.to(device), x, hyperedge_attr, args.patience, args.delta, weight_true_class).cpu()
             else:
                 raise "Unexpected set. Feature method is not set and graph/hypergraph method is unknown."
+
+            # ignore hyperedges predictions
+            preds = preds[:data.num_nodes]
                 
                 
             local_end = time()
