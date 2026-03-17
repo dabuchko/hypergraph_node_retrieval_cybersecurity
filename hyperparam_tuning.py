@@ -188,7 +188,7 @@ def main(args: argparse.ArgumentParser):
                     node2vec = EMBEDDING_METHODS[args.embedding](**embedding_hp_set).to(device)
                     _ = embedding_hp_set["edge_index"].detach().cpu()
                     del embedding_hp_set["edge_index"]
-                    x = fit_transform_node2vec(node2vec, args.patience, args.delta, args.batch_size, args.num_workers)
+                    x = fit_transform_node2vec(node2vec, args.patience, args.delta, args.batch_size, args.num_workers, device)
                 else:
                     embedding_class = EMBEDDING_METHODS[args.embedding](**embedding_hp_set)
                     if isinstance(embedding_class, RandomGaussian):

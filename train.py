@@ -7,11 +7,11 @@ from random import shuffle
 from math import ceil
 import random
 
-def fit_transform_node2vec(node2vec_model, patience: int = 0, delta: float = 0.0, batch_size: int = 512, num_workers: int = 0):
+def fit_transform_node2vec(node2vec_model, patience: int = 0, delta: float = 0.0, batch_size: int = 512, num_workers: int = 0, device="cpu"):
     last_loss = float("inf")
     current_patience = patience
     optimizer = torch.optim.SparseAdam(list(node2vec_model.parameters()), lr=0.01)
-    device = node2vec_model.embedding.weight.device
+    device = torch.device(device)
 
     loader = node2vec_model.loader(batch_size=batch_size, shuffle=True, num_workers=num_workers)
     node2vec_model.train()
