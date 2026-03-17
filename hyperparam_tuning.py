@@ -95,7 +95,7 @@ def main(args: argparse.ArgumentParser):
     if args.imbalance in ["random_oversampling", "random_undersampling", "SMOTE", "tomek_links"] and  graph_set:
         raise Exception("Specified imbalance handling strategy is unavailable for graph methods.")
     if args.imbalance=="weight" and (args.feature_based=="KNN" or args.graph_based=="Label Propagation" or args.graph_based=="CSP"):
-            assert "'weight' imbalance sampling handling strategy is unavailable for KNN and label propagation methods."
+            raise Exception("'weight' imbalance sampling handling strategy is unavailable for KNN and label propagation methods.")
 
     # Set the random seed and the number of threads.
     if args.seed is not None:
