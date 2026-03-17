@@ -165,9 +165,9 @@ def main(args: argparse.ArgumentParser):
             # load the graph representation of the hypergraph if needed
             if args.embedding=="Node2Vec" or args.embedding=="Spectral Embedding":
                 if args.graph_repr_embedding=="incidence":
-                    embedding_graph = data.incidence_graph().to_homogeneous().to(device)
+                    embedding_graph = data.incidence_graph().to_homogeneous()
                 elif args.graph_repr_embedding=="clique":
-                    embedding_graph = data.clique_graph().to(device)
+                    embedding_graph = data.clique_graph()
                 embedding_graph.y = embedding_graph.y.float()[:, None]
             if args.graph_based in GRAPH_METHODS:
                 if embedding_graph!=None and args.graph_repr_GNN==args.graph_repr_embedding:
