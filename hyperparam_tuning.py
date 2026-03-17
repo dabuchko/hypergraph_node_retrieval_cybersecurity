@@ -186,7 +186,8 @@ def main(args: argparse.ArgumentParser):
                     embedding_hp_set["edge_index"] = embedding_graph.edge_index
                     embedding_hp_set["num_nodes"] = embedding_graph.num_nodes
                     node2vec = EMBEDDING_METHODS[args.embedding](**embedding_hp_set).to(device)
-                    del embedding_hp_set["edge_index"].detach().cpu()
+                    _ = embedding_hp_set["edge_index"].detach().cpu()
+                    del embedding_hp_set["edge_index"]
                     x = fit_transform_node2vec(node2vec, args.patience, args.delta, args.batch_size, args.num_workers)
                 else:
                     embedding_class = EMBEDDING_METHODS[args.embedding](**embedding_hp_set)
