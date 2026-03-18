@@ -127,7 +127,7 @@ def main(args: argparse.ArgumentParser):
     if args.imbalance=="weight":
         weight_true_class = data.y.sum().float()
         weight_true_class /= data.y.shape[0] - weight_true_class
-        weight_true_class = weight_true_class.to(device)
+        weight_true_class = weight_true_class
 
     # load hyperparameters ranges
     try:
@@ -151,8 +151,8 @@ def main(args: argparse.ArgumentParser):
     best_pr_auc = 0
     best_hyperparameters = None
     global_start = time()
-    val_y = data.y[data.val_mask].cpu()
-    test_y = data.y[data.test_mask].cpu()
+    val_y = data.y[data.val_mask]
+    test_y = data.y[data.test_mask]
 
     for embedding_hp_set, method_hp_set in hp_generator:
         try:
@@ -183,12 +183,12 @@ def main(args: argparse.ArgumentParser):
             # compute embeddings if needed
             if embedding_set:
                 if args.embedding=="Node2Vec":
-                    embedding_hp_set["edge_index"] = embedding_graph.edge_index
+                    embedding_hp_set["edge_index"] = embedding_graph.edge_index.to(device)
                     embedding_hp_set["num_nodes"] = embedding_graph.num_nodes
                     node2vec = EMBEDDING_METHODS[args.embedding](**embedding_hp_set).to(device)
                     _ = embedding_hp_set["edge_index"].detach().cpu()
                     del embedding_hp_set["edge_index"]
-                    x = fit_transform_node2vec(node2vec, args.patience, args.delta, args.batch_size, args.num_workers, device)
+                    x = fit_transform_node2vec(node2vec, args.patience, args.delta, args.batch_size, args.num_workers, device).cpu()
                 else:
                     embedding_class = EMBEDDING_METHODS[args.embedding](**embedding_hp_set)
                     if isinstance(embedding_class, RandomGaussian):
@@ -198,38 +198,34 @@ def main(args: argparse.ArgumentParser):
                         if data.hyperedge_weight!=None:
                             hyperedge_weight = data.hyperedge_weight.to(device)
                         P, Q = embedding_class(data.sparse_incidence_matrix().to(device), hyperedge_weight)
-                        x = torch.cat([P, Q], 0)
+                        x = torch.cat([P.cpu(), Q.cpu()], 0)
                     elif isinstance(embedding_class, SpectralEmbedding):
                         hyperedge_weight = None
                         if data.hyperedge_weight!=None:
-                            hyperedge_weight = data.hyperedge_weight.to(device)
-                        x = embedding_class(embedding_graph.edge_index.cpu(), embedding_graph.edge_weight.cpu())
-                    x = x.to(torch.float).to(device)
+                            hyperedge_weight = data.hyperedge_weight
+                        x = embedding_class(embedding_graph.edge_index, hyperedge_weight)
+                    x = x.to(torch.float)
                 if embedding_graph!=None:
                     del embedding_graph
             elif args.graph_based=="CSP":
                 x = data.y.clone()
                 x[~data.train_mask] = 0 # consider only training labels
-                x = x.to(device)
             elif args.graph_based=="Label Propagation":
                 x = graph.y.clone()
                 x[~graph.train_mask] = 0 # consider only training labels
-                x = x.to(device)
             
             
             embedding_end = time()
-            if graph!=None:
-                graph = graph.to(device)
             # train methods on embeddings (if any) and generate predictions 'preds'
             print("embedding done")
             if features_set:
-                x = x[:data.num_nodes].cpu().numpy()
-                train_x = x[data.train_mask.cpu().numpy()]
-                train_y = data.y[data.train_mask].cpu().numpy()
+                x = x[:data.num_nodes].numpy()
+                train_x = x[data.train_mask.numpy()]
+                train_y = data.y[data.train_mask].numpy()
                 method = FEATURE_METHODS[args.feature_based](**method_hp_set)
                 if args.imbalance=="weight":
                     weights = np.ones((train_x.shape[0],), dtype=float)
-                    weights[train_y==1] = weight_true_class.cpu().numpy()
+                    weights[train_y==1] = weight_true_class.numpy()
                     method.fit(train_x, train_y, sample_weight=weights)
                 else:
                     if args.imbalance=="random_oversampling":
@@ -243,51 +239,51 @@ def main(args: argparse.ArgumentParser):
                     method.fit(train_x, train_y)
                 preds = torch.tensor(method.predict_proba(x))[:, 1]
             elif args.graph_based=="Label Propagation":
-                preds = GRAPH_METHODS[args.graph_based](**method_hp_set)(x, graph.edge_index, edge_weight=graph.edge_weight)
-                preds = preds[:data.num_nodes].cpu()
+                preds = GRAPH_METHODS[args.graph_based](**method_hp_set)(x.to(device), graph.edge_index.to(device), edge_weight=graph.edge_weight.to(device))
+                preds = preds[:data.num_nodes]
             elif args.graph_based=="CSP":
-                preds = HYPERGRAPH_METHODS[args.graph_based](**method_hp_set)(x, data.hyperedge_index.to(device)).cpu()
+                preds = HYPERGRAPH_METHODS[args.graph_based](**method_hp_set)(x.to(device), data.hyperedge_index.to(device))
             elif args.graph_based in GRAPH_METHODS:
                 if x!=None:
                     if args.graph_repr_GNN=="incidence":
                         if x.shape[0]!=data.num_nodes + data.num_edges:
-                            x = torch.cat([x, torch.zeros((data.num_nodes + data.num_edges - x.shape[0], x.shape[1]), device=device)], 0)
-                        graph.x = x.to(device)
+                            x = torch.cat([x, torch.zeros((data.num_nodes + data.num_edges - x.shape[0], x.shape[1]))], 0)
+                        graph.x = x
                     else:
-                        graph.x = x[:data.num_nodes].to(device)
+                        graph.x = x[:data.num_nodes]
                     method_hp_set["in_channels"] = graph.x.shape[-1]
                     method_hp_set["out_channels"] = 1
                 if args.graph_based=="GraphSAGE":
                     method_hp_set_copy = method_hp_set.copy()
                     del method_hp_set_copy["num_neighbors"]
-                    model = GRAPH_METHODS[args.graph_based](**method_hp_set_copy).to(device)
+                    model = GRAPH_METHODS[args.graph_based](**method_hp_set_copy)
                     preds = train_GNN_batches(model, graph, method_hp_set["num_neighbors"], args.patience,
-                                        args.delta, args.batch_size, weight_true_class).cpu()
+                                        args.delta, args.batch_size, weight_true_class, device)
                 else:
-                    model = GRAPH_METHODS[args.graph_based](**method_hp_set).to(device)
-                    preds = train_GNN(model, graph, args.patience, args.delta, weight_true_class).cpu()
+                    model = GRAPH_METHODS[args.graph_based](**method_hp_set)
+                    preds = train_GNN(model, graph, args.patience, args.delta, weight_true_class, device)
             elif args.graph_based in HYPERGRAPH_METHODS:
                 hyperedge_attr = None
                 if x!=None:
                     if x.shape[0]>data.num_nodes:
-                        hyperedge_attr = x[data.num_nodes:].to(device)
-                    x = x[:data.num_nodes].to(device)
+                        hyperedge_attr = x[data.num_nodes:]
+                    x = x[:data.num_nodes]
                     method_hp_set["in_channels"] = x.shape[-1]
                     method_hp_set["out_channels"] = 1
                 if args.graph_based=="HyperSAGE" or args.graph_based=="MaxSum":
                     method_hp_set_copy = method_hp_set.copy()
-                    del method_hp_set_copy["num_neighbors"]
-                    model = HYPERGRAPH_METHODS[args.graph_based](**method_hp_set_copy).to(device)
-                    preds = train_HGNN_batches(model, data.to(device), x, method_hp_set["num_neighbors"], hyperedge_attr,
-                                               args.patience, args.delta, weight_true_class).cpu()
+                    del method_hp_set_copy["batch_size"]
+                    model = HYPERGRAPH_METHODS[args.graph_based](**method_hp_set_copy)
+                    preds = train_HGNN_batches(model, data, x, method_hp_set["batch_size"], hyperedge_attr,
+                                               args.patience, args.delta, weight_true_class, device)
                 else:
-                    model = HYPERGRAPH_METHODS[args.graph_based](**method_hp_set).to(device)
-                    preds = train_HGNN(model, data.to(device), x, hyperedge_attr, args.patience, args.delta, weight_true_class).cpu()
+                    model = HYPERGRAPH_METHODS[args.graph_based](**method_hp_set)
+                    preds = train_HGNN(model, data, x, hyperedge_attr, args.patience, args.delta, weight_true_class, device)
             else:
                 raise "Unexpected set. Feature method is not set and graph/hypergraph method is unknown."
 
             # ignore hyperedges predictions
-            preds = preds[:data.num_nodes]
+            preds = preds[:data.num_nodes].cpu()
                 
                 
             local_end = time()
@@ -295,8 +291,8 @@ def main(args: argparse.ArgumentParser):
             if int(time())-global_start>args.time_limit:
                 break
             # evaluate predictions using Accuracy, ROC-AUC and PR-AUC metrics
-            roc_auc, pr_auc = evaluate(preds[data.val_mask.cpu()], val_y)
-            test_roc_auc, test_pr_auc = evaluate(preds[data.test_mask.cpu()], test_y)
+            roc_auc, pr_auc = evaluate(preds[data.val_mask], val_y)
+            test_roc_auc, test_pr_auc = evaluate(preds[data.test_mask], test_y)
             # save results
             os.makedirs(args.logdir, exist_ok=True) # it is important to create directory not earlier than at least one iteration succeeded
             with open(args.logdir + "/results.csv", "a+") as f:
