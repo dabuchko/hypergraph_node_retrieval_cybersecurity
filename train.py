@@ -6,29 +6,18 @@ from random import shuffle
 from math import ceil
 from data.hypergraph import Hypergraph
 
-def fit_transform_node2vec(node2vec_model, patience: int = 0, delta: float = 0.0, batch_size: int = 512, num_workers: int = 0, device="cpu"):
+def fit_transform_node2vec(node2vec_model, batch_size: int = 512, num_workers: int = 0, device="cpu"):
     device = torch.device(device)
     node2vec_model.to(device)
-    last_loss = float("inf")
-    current_patience = patience
     optimizer = torch.optim.SparseAdam(list(node2vec_model.parameters()), lr=0.01)
 
     loader = node2vec_model.loader(batch_size=batch_size, shuffle=True, num_workers=num_workers)
     node2vec_model.train()
-    while current_patience>=0:
-        current_loss = 0
-        for pos_rw, neg_rw in loader:
-            optimizer.zero_grad()
-            loss = node2vec_model.loss(pos_rw.to(device), neg_rw.to(device))
-            loss.backward()
-            optimizer.step()
-            current_loss+=loss.item()
-        current_loss /= len(loader)
-        if last_loss<current_loss+delta:
-            current_patience -= 1
-        else:
-            current_patience = patience
-        last_loss = min(current_loss, last_loss)
+    for pos_rw, neg_rw in loader:
+        optimizer.zero_grad()
+        loss = node2vec_model.loss(pos_rw.to(device), neg_rw.to(device))
+        loss.backward()
+        optimizer.step()
     node2vec_model.eval()
     with torch.no_grad():
         x = node2vec_model().detach()
