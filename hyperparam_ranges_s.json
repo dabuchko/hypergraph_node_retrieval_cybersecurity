@@ -58,7 +58,8 @@
         "num_layers": [1, 2, 3, 4],
         "dropout": [0.0, 0.2, 0.4, 0.6, 0.8],
         "aggr": ["mean", "max"],
-        "num_neighbors": [1, 2, 4, 8, 16, 32, 64]
+        "num_neighbors": [1, 2, 4, 8, 16, 32, 64],
+        "batch_size": [64, 128, 256, 512]
     },
     "Label Propagation": {
         "num_layers": [1, 2, 3, 4],

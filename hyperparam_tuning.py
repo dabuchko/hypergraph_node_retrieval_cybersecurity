@@ -256,9 +256,10 @@ def main(args: argparse.ArgumentParser):
                 if args.graph_based=="GraphSAGE":
                     method_hp_set_copy = method_hp_set.copy()
                     del method_hp_set_copy["num_neighbors"]
+                    del method_hp_set_copy["batch_size"]
                     model = GRAPH_METHODS[args.graph_based](**method_hp_set_copy)
                     preds = train_GNN_batches(model, graph, method_hp_set["num_neighbors"], args.patience,
-                                        args.delta, args.batch_size, weight_true_class, device)
+                                        args.delta, method_hp_set["batch_size"], weight_true_class, device)
                 else:
                     model = GRAPH_METHODS[args.graph_based](**method_hp_set)
                     preds = train_GNN(model, graph, args.patience, args.delta, weight_true_class, device)
