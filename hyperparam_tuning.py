@@ -188,7 +188,7 @@ def main(args: argparse.ArgumentParser):
                     node2vec = EMBEDDING_METHODS[args.embedding](edge_index=embedding_graph.edge_index,
                                                                  num_nodes=embedding_graph.num_nodes,
                                                                  **embedding_hp_set_copy).to(device)
-                    x = fit_transform_node2vec(node2vec, embedding_hp_set["batch_size"], args.num_workers, device).cpu()
+                    x = fit_transform_node2vec(node2vec, embedding_hp_set["batch_size"], device).cpu()
                 else:
                     embedding_class = EMBEDDING_METHODS[args.embedding](**embedding_hp_set)
                     if isinstance(embedding_class, RandomGaussian):
@@ -335,7 +335,6 @@ if __name__ == '__main__':
     parser.add_argument("--patience", default=5, type=int, help="Maximum number of epochs for which" \
     "loss decrease less than delta may be tollerated.")
     parser.add_argument("--seed", default=42, type=int, help="Random seed.")
-    parser.add_argument("--num_workers", default=4, type=int, help="Number of workers to be used in dataloaders.")
     parser.add_argument("--threads", default=16, type=int, help="Maximum number of threads to use.")
     parser.add_argument("--hyperparam_ranges", default="",
                         type=str, help="Path to the JSON file containing hyperparameter ranges" \

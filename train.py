@@ -6,12 +6,12 @@ from random import shuffle
 from math import ceil
 from data.hypergraph import Hypergraph
 
-def fit_transform_node2vec(node2vec_model, batch_size: int = 512, num_workers: int = 0, device="cpu"):
+def fit_transform_node2vec(node2vec_model, batch_size: int = 512, device="cpu"):
     device = torch.device(device)
     node2vec_model.to(device)
     optimizer = torch.optim.SparseAdam(list(node2vec_model.parameters()), lr=0.01)
 
-    loader = node2vec_model.loader(batch_size=batch_size, shuffle=True, num_workers=num_workers)
+    loader = node2vec_model.loader(batch_size=batch_size, shuffle=True)
     node2vec_model.train()
     for pos_rw, neg_rw in loader:
         optimizer.zero_grad()
