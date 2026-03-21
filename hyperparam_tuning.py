@@ -240,8 +240,8 @@ def main(args: argparse.ArgumentParser):
                 preds = torch.tensor(method.predict_proba(x))[:, 1]
             elif args.graph_based=="Label Propagation":
                 graph_weight = None
-                if embedding_graph.edge_weight!=None:
-                    graph_weight = embedding_graph.edge_weight
+                if graph.edge_weight!=None:
+                    graph_weight = graph.edge_weight
                 preds = GRAPH_METHODS[args.graph_based](**method_hp_set)(x.to(device), graph.edge_index.to(device), edge_weight=graph_weight)
                 preds = preds[:data.num_nodes]
             elif args.graph_based=="CSP":
