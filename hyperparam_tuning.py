@@ -241,11 +241,11 @@ def main(args: argparse.ArgumentParser):
             elif args.graph_based=="Label Propagation":
                 graph_weight = None
                 if graph.edge_weight!=None:
-                    graph_weight = graph.edge_weight
+                    graph_weight = graph.edge_weight.to(device)
                 preds = GRAPH_METHODS[args.graph_based](**method_hp_set)(x.to(device), graph.edge_index.to(device), edge_weight=graph_weight)
-                preds = preds[:data.num_nodes]
+                preds = preds[:data.num_nodes].reshape(-1)
             elif args.graph_based=="CSP":
-                preds = HYPERGRAPH_METHODS[args.graph_based](**method_hp_set)(x.to(device), data.hyperedge_index.to(device))
+                preds = HYPERGRAPH_METHODS[args.graph_based](**method_hp_set)(x.to(device), data.hyperedge_index.to(device)).reshape(-1)
             elif args.graph_based in GRAPH_METHODS:
                 if x!=None:
                     if args.graph_repr_GNN=="incidence":
