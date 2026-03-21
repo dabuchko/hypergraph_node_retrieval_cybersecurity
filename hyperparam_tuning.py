@@ -168,7 +168,7 @@ def main(args: argparse.ArgumentParser):
                     embedding_graph = data.incidence_graph().to_homogeneous()
                 elif args.graph_repr_embedding=="clique":
                     embedding_graph = data.clique_graph()
-                embedding_graph.y = embedding_graph.y.float()[:, None]
+                embedding_graph.y = embedding_graph.y.float().reshape(-1, 1)
             if args.graph_based in GRAPH_METHODS:
                 if embedding_graph!=None and args.graph_repr_GNN==args.graph_repr_embedding:
                     graph = embedding_graph
@@ -177,7 +177,7 @@ def main(args: argparse.ArgumentParser):
                         graph = data.incidence_graph().to_homogeneous()
                     elif args.graph_repr_GNN=="clique":
                         graph = data.clique_graph()
-                    graph.y = graph.y.float()[:, None]
+                    graph.y = graph.y.float().reshape(-1, 1)
 
 
             # compute embeddings if needed
@@ -239,7 +239,10 @@ def main(args: argparse.ArgumentParser):
                     method.fit(train_x, train_y)
                 preds = torch.tensor(method.predict_proba(x))[:, 1]
             elif args.graph_based=="Label Propagation":
-                preds = GRAPH_METHODS[args.graph_based](**method_hp_set)(x.to(device), graph.edge_index.to(device), edge_weight=graph.edge_weight.to(device))
+                graph_weight = None
+                if embedding_graph.edge_weight!=None:
+                    graph_weight = embedding_graph.edge_weight
+                preds = GRAPH_METHODS[args.graph_based](**method_hp_set)(x.to(device), graph.edge_index.to(device), edge_weight=graph_weight)
                 preds = preds[:data.num_nodes]
             elif args.graph_based=="CSP":
                 preds = HYPERGRAPH_METHODS[args.graph_based](**method_hp_set)(x.to(device), data.hyperedge_index.to(device))
@@ -318,7 +321,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("dataset", choices=DATASETS.keys(), type=str,
                         help="Datasets on which hyperparameter tuning should be run.")
-    parser.add_argument("--embedding", choices=EMBEDDING_METHODS.keys(), type=str,
+    parser.add_argument("--embedding", choices=EMBEDDING_METHODS.keys(), type=str, default=None,
                         help="Methods to evaluate during the hyperparameter tuning.")
     parser.add_argument("--feature_based", choices=FEATURE_METHODS.keys(), type=str,
                         help="Methods to evaluate during the hyperparameter tuning.")
