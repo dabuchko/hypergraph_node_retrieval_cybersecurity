@@ -16,6 +16,7 @@ import numpy as np
 
 from data import *
 from models import *
+from imbalance import *
 
 from train import train_GNN, train_GNN_batches, train_HGNN, train_HGNN_batches, evaluate, fit_transform_node2vec
 
@@ -128,6 +129,10 @@ def main(args: argparse.ArgumentParser):
         weight_true_class = data.y.sum().float()
         weight_true_class /= data.y.shape[0] - weight_true_class
         weight_true_class = weight_true_class
+    elif args.imbalance=="hyper_undersampling":
+        data = hyper_undersampling(data)
+    elif args.imbalance=="hyperedge_selection":
+        data = hyperedge_selection(data)
 
     # load hyperparameters ranges
     try:
@@ -346,7 +351,8 @@ if __name__ == '__main__':
     parser.add_argument("--time_limit", type=int, default=6000,
                         help="Maximum time in seconds to spend on hyperparameter tuning.")
     parser.add_argument("--imbalance", type=str, default="none", choices=["none", "weight", \
-        "random_oversampling", "random_undersampling", "SMOTE", "tomek_links"], \
+        "random_oversampling", "random_undersampling", "SMOTE", "tomek_links",
+        "hyper_undersampling", "hyperedge_selection"], \
         help="Strategies to handle imbalance.")
     args = parser.parse_args([] if "__file__" not in globals() else None)
     if args.hyperparam_ranges=="":
