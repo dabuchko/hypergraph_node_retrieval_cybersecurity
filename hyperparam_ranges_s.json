@@ -72,19 +72,22 @@
         "hidden_channels": [8, 16, 32, 64, 128],
         "num_layers": [1, 2, 3, 4],
         "dropout": [0.0, 0.2, 0.4, 0.6, 0.8],
-        "bias": [false, true]
+        "bias": [false, true],
+        "act": [null, "tanh", "relu"]
     },
     "HCHA": {
         "num_layers": [1, 2, 3, 4],
         "heads": [1, 2, 4, 8],
         "dropout": [0.0, 0.2, 0.4, 0.6, 0.8],
-        "bias": [false, true]
+        "bias": [false, true],
+        "act": [null, "tanh", "relu"]
     },
     "HyperGCN": {
         "hidden_channels": [8, 16, 32, 64, 128],
         "num_layers": [1, 2],
         "dropout": [0.0, 0.2, 0.4, 0.6, 0.8],
-        "bias": [false, true]
+        "bias": [false, true],
+        "act": [null, "tanh", "relu"]
     },
     "UniGCN": {
         "hidden_channels": [8, 16, 32, 64, 128],
@@ -158,14 +161,16 @@
         "heads": [1, 2, 4, 8],
         "nonlinear_inbetween": [false, true],
         "alpha": [0.0, 0.5, 1.0, 2.0],
-        "beta": [0.0, 0.5, 1.0, 2.0]
+        "beta": [0.0, 0.5, 1.0, 2.0],
+        "act": [null, "tanh", "relu"]
     },
     "HyperSAGE": {
         "hidden_channels": [8, 16, 32, 64, 128],
         "p": [-1, 0.01, 0.5, 1.0, 2.0],
         "num_layers": [1, 2, 3, 4],
         "dropout": [0.0, 0.2, 0.4, 0.6, 0.8],
-        "batch_size": [512, 1024, 2048, 4096]
+        "batch_size": [512, 1024, 2048, 4096],
+        "act": [null, "tanh", "relu"]
     },
     "MaxSum": {
         "hidden_channels": [8, 16, 32, 64, 128],
