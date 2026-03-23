@@ -29,15 +29,19 @@ class HyperGCNConv(MessagePassing):
                 edge_index.append((i,i))
                 edge_weight.append(1.0)
             for hyperedge in hyperedge_dict.keys():
-                max_dist = 0
-                best_i, best_j = 0, 0
-                for i in hyperedge_dict[hyperedge][:-1]:
-                    d = ((x[i+1:] - x[i][None, :])**2).sum(1)
+                if len(hyperedge_dict[hyperedge])<=1:
+                    continue
+                max_dist = -1
+                best_i, best_j = -1, -1
+                for i in range(len(hyperedge_dict[hyperedge]) - 1):
+                    a = hyperedge_dict[hyperedge][i]
+                    b = hyperedge_dict[hyperedge][i+1:]
+                    d = ((x[b] - x[a][None, :])**2).sum(1)
                     max_d = d.max().item()
                     if max_dist<max_d:
                         max_dist = max_d
-                        best_i = i
-                        best_j = d.argmax().item() + i + 1
+                        best_i = a
+                        best_j = b[d.argmax().item()]
                 w = 1/(2*len(hyperedge_dict[hyperedge]) - 3)
                 edge_index.append((best_j, best_i))
                 edge_index.append((best_i, best_j))
