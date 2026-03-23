@@ -13,7 +13,7 @@ from .hypergraph.allset import AllDeepSets, AllSetTransformer
 from .hypergraph.hnhn import HNHN
 from .hypergraph.hgnn import HGNN
 from .hypergraph.csp import CSP
-from .hypergraph.maxsum import MaxSum
+from .hypergraph.minsum import MinSum
 from .hypergraph.hypersage import HyperSAGE
 
 __all__ = ["EMBEDDING_METHODS", "FEATURE_METHODS", "HYPERGRAPH_METHODS", "GRAPH_METHODS", "RandomGaussian",
@@ -21,7 +21,7 @@ __all__ = ["EMBEDDING_METHODS", "FEATURE_METHODS", "HYPERGRAPH_METHODS", "GRAPH_
            "SpectralEmbeddingNorm", "Node2Vec", "LogisticRegression", "MLPClassifier", "GaussianNB",
            "KNeighborsClassifier", "HyperGCN", "UniGCN", "UniGAT", "UniGIN", "UniSAGE", "UniGCNII",
            "HCHA", "AllDeepSets", "AllSetTransformer", "HNHN", "HGNN", "CSP", "GCN", "GIN", "GAT",
-           "GraphSAGE", "LabelPropagation", "HyperSAGE", "MaxSum"]
+           "GraphSAGE", "LabelPropagation", "HyperSAGE", "MinSum"]
 
 EMBEDDING_METHODS = {"Random Gaussian": RandomGaussian, "Matrix Factorization": MatrixFactorization,
                      "Spectral Embedding": SpectralEmbedding,
@@ -33,6 +33,6 @@ FEATURE_METHODS = {"Logistic Regression": LogisticRegression, "MLP": MLPClassifi
 HYPERGRAPH_METHODS = {"HyperGCN": HyperGCN, "UniGCN": UniGCN, "UniGAT": UniGAT, "UniGIN": UniGIN,
                       "UniSAGE": UniSAGE, "UniGCNII": UniGCNII, "HCHA": HCHA, "AllDeepSets": AllDeepSets,
                       "AllSetTransformer": AllSetTransformer, "HNHN": HNHN, "HGNN": HGNN, "CSP": CSP,
-                      "HyperSAGE": HyperSAGE, "MaxSum": MaxSum}
+                      "HyperSAGE": HyperSAGE, "MinSum": MinSum}
 GRAPH_METHODS = {"GCN": GCN, "GIN": GIN, "GAT": GAT, "GraphSAGE": GraphSAGE, "Label Propagation": LabelPropagation}
 

@@ -279,7 +279,7 @@ def main(args: argparse.ArgumentParser):
                     x = x[:data.num_nodes]
                     method_hp_set["in_channels"] = x.shape[-1]
                     method_hp_set["out_channels"] = 1
-                if args.graph_based=="HyperSAGE" or args.graph_based=="MaxSum":
+                if args.graph_based=="HyperSAGE" or args.graph_based=="MinSum":
                     method_hp_set_copy = method_hp_set.copy()
                     del method_hp_set_copy["batch_size"]
                     model = HYPERGRAPH_METHODS[args.graph_based](**method_hp_set_copy)
