@@ -208,7 +208,7 @@ def main(args: argparse.ArgumentParser):
                         graph_weight = None
                         if embedding_graph.edge_weight!=None:
                             graph_weight = embedding_graph.edge_weight
-                        x = embedding_class(embedding_graph.edge_index, graph_weight)
+                        x = embedding_class(embedding_graph.edge_index, graph_weight, embedding_graph.num_nodes)
                     x = x.to(torch.float)
                 if embedding_graph!=None:
                     del embedding_graph

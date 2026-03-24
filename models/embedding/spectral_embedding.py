@@ -3,7 +3,7 @@ from scipy.sparse.linalg import lobpcg
 from scipy.sparse import coo_matrix
 import numpy as np
 
-def _construct_unnormalized_laplacian(edge_index: torch.Tensor, edge_weight: torch.Tensor = None):
+def _construct_unnormalized_laplacian(edge_index: torch.Tensor, edge_weight: torch.Tensor = None, num_nodes: int = None):
     """
     Generates unnormalized Laplacian matrix L and degree vector D based on the
     provided edge indices and their corresponding weights (weight 1 is assumed for
@@ -25,7 +25,8 @@ def _construct_unnormalized_laplacian(edge_index: torch.Tensor, edge_weight: tor
         edge_weight = edge_weight.clone()
     edge_index = edge_index.clone()
     
-    num_nodes = edge_index.max().item() + 1
+    if num_nodes==None:
+        num_nodes = edge_index.max().item() + 1
     # construct degree vector D, which is utilized in a form of diagonal matrix
     # in the original algorithm
     D = torch.zeros((num_nodes,))
@@ -63,7 +64,7 @@ class SpectralEmbeddingUnnormalized(torch.nn.Module):
         self.dim = dim
         super().__init__()
     
-    def forward(self, edge_index: torch.Tensor, edge_weight: torch.Tensor = None):
+    def forward(self, edge_index: torch.Tensor, edge_weight: torch.Tensor = None, num_nodes: int = None):
         """
         Forward method to generate Spectral Embedding based on provided edge indices
         and their corresponding weights.
@@ -76,7 +77,7 @@ class SpectralEmbeddingUnnormalized(torch.nn.Module):
         corresponding edge from 'edge_index'
         :type edge_weight: torch.Tensor
         """
-        L, _ = _construct_unnormalized_laplacian(edge_index, edge_weight)
+        L, _ = _construct_unnormalized_laplacian(edge_index, edge_weight, num_nodes)
         # find eigenvectors
         init_eigenvectors = np.random.rand(L.shape[0], self.dim+1)
         init_eigenvectors[:, 0] = 1
@@ -99,7 +100,7 @@ class SpectralEmbeddingSideNorm(torch.nn.Module):
         self.dim = dim
         super().__init__()
     
-    def forward(self, edge_index: torch.Tensor, edge_weight: torch.Tensor = None):
+    def forward(self, edge_index: torch.Tensor, edge_weight: torch.Tensor = None, num_nodes: int = None):
         """
         Forward method to generate Spectral Embedding side-normalized based o
         the provided edge indices and their corresponding weights.
@@ -112,7 +113,7 @@ class SpectralEmbeddingSideNorm(torch.nn.Module):
         corresponding edge from 'edge_index'
         :type edge_weight: torch.Tensor
         """
-        L, D = _construct_unnormalized_laplacian(edge_index, edge_weight)
+        L, D = _construct_unnormalized_laplacian(edge_index, edge_weight, num_nodes)
         # normalize weights by columns
         L.data /= D[L.col] + 1e-9
         # find eigenvectors
@@ -138,7 +139,7 @@ class SpectralEmbeddingNorm(torch.nn.Module):
         self.dim = dim
         super().__init__()
     
-    def forward(self, edge_index: torch.Tensor, edge_weight: torch.Tensor = None):
+    def forward(self, edge_index: torch.Tensor, edge_weight: torch.Tensor = None, num_nodes: int = None):
         """
         Forward method to generate Spectral Embedding Normalized based o
         the provided edge indices and their corresponding weights.
@@ -151,7 +152,7 @@ class SpectralEmbeddingNorm(torch.nn.Module):
         corresponding edge from 'edge_index'
         :type edge_weight: torch.Tensor
         """
-        L, D = _construct_unnormalized_laplacian(edge_index, edge_weight)
+        L, D = _construct_unnormalized_laplacian(edge_index, edge_weight, num_nodes)
         # normalize weights by columns and rows
         L.data /= D[L.col] ** 0.5 + 1e-9
         L.data /= D[L.row] ** 0.5 + 1e-9
@@ -196,7 +197,7 @@ class SpectralEmbedding(torch.nn.Module):
         elif mode=="unnormalized":
             self._underlying_method = SpectralEmbeddingUnnormalized(dim)
     
-    def forward(self, edge_index: torch.Tensor, edge_weight: torch.Tensor = None):
+    def forward(self, edge_index: torch.Tensor, edge_weight: torch.Tensor = None, num_nodes: int = None):
         """
         Forward method to generate Spectral Embeddings using the chosen method
         based on the provided edge indices and their corresponding weights.
@@ -209,4 +210,4 @@ class SpectralEmbedding(torch.nn.Module):
         corresponding edge from 'edge_index'
         :type edge_weight: torch.Tensor
         """
-        return self._underlying_method.forward(edge_index, edge_weight)
+        return self._underlying_method.forward(edge_index, edge_weight, num_nodes)
