@@ -80,7 +80,7 @@ class HyperparameterSetGenerator():
                 return comb
             else:
                 self._counter += 1
-                if self._counter>=len(self._precomputed):
+                if self._counter>len(self._precomputed):
                     raise StopIteration
                 return self._precomputed[self._counter - 1]
 
