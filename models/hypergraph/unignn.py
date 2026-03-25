@@ -78,15 +78,18 @@ class UniGATConv(MessagePassing):
         att = torch.nn.functional.leaky_relu(x_att[hyperedge_index[0]] + out_att[hyperedge_index[1]], self.negative_slope)
         att_self = torch.nn.functional.leaky_relu(x_att*2, self.negative_slope)
         att = att - max(att.max(), att_self.max())
+        att_self = att_self - max(att.max(), att_self.max())
         att = torch.exp(att)
         att_self = torch.exp(att_self)
-        att_sum = scatter(att, hyperedge_index[0], dim=0, dim_size=num_nodes, reduce='sum') + att_self
+        att_sum = scatter(att, hyperedge_index[0], dim=0, dim_size=num_nodes, reduce='sum') + att_self + 1e-9
         att = att / att_sum[hyperedge_index[0]]
         att_self = att_self / att_sum
         res = att_self[:, None] * x
         step = 3000
         for i in range(0, hyperedge_index.shape[1], step):
             res += scatter(att[i:i+step][:, None] * out[hyperedge_index[1,i:i+step]], hyperedge_index[0, i:i+step], dim=0, dim_size=num_nodes, reduce='sum')
+        if (res!=res).sum().item()>0:
+            breakpoint()
         return res
 
 class UniGAT(BasicHGNN):
