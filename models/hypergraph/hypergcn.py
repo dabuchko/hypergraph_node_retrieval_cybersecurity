@@ -13,7 +13,7 @@ class HyperGCNConv(MessagePassing):
     
     def forward(self, x: Tensor, hyperedge_index: Tensor):
         x = self.lin(x)
-        num_nodes = hyperedge_index[0, :].max().item()+1
+        num_nodes = x.shape[0]
         with torch.no_grad():
             edge_index = []
             edge_weight = []
