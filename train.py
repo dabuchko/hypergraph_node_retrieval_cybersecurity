@@ -83,6 +83,8 @@ def train_GNN_batches(model, graph, num_neighbors:int = 3, patience: int = 0, de
     while current_patience>=0:
         model.train()
         for batch_graph in loader:
+            if batch_graph.train_mask.sum()==0:
+                continue
             batch_graph = batch_graph.to(device)
             optimizer.zero_grad()
             batch_edge_weight = graph.edge_weight[batch_graph.e_id.to(graph.edge_weight.device)].to(device)
@@ -95,6 +97,8 @@ def train_GNN_batches(model, graph, num_neighbors:int = 3, patience: int = 0, de
             preds = torch.zeros_like(graph.y, device=device)
             model.eval()
             for batch_graph in loader:
+                if batch_graph.val_mask.sum()==0:
+                    continue
                 batch_graph = batch_graph.to(device)
                 batch_edge_weight = graph.edge_weight[batch_graph.e_id.to(graph.edge_weight.device)].to(device)
                 batch_preds = model(batch_graph.x, batch_graph.edge_label_index, edge_weight=batch_edge_weight)
@@ -182,6 +186,9 @@ def train_HGNN_batches(model, hypergraph, x, batch_size:list = 64, hyperedge_att
             batch_hyperedge_index = randomly_sorted_hyperedge_index[:, b:b+batch_size].clone()
             batch_hypernodes, batch_hyperedge_index[0] = torch.unique(batch_hyperedge_index[0], sorted=True, return_inverse=True)
             batch_hyperedges, batch_hyperedge_index[1] = torch.unique(batch_hyperedge_index[1], sorted=True, return_inverse=True)
+            batch_train_mask = hypergraph.train_mask[batch_hypernodes]
+            if batch_train_mask.sum()==0:
+                continue
 
             kwargs = {}
             if model.supports_hyperedge_attr:
@@ -189,7 +196,6 @@ def train_HGNN_batches(model, hypergraph, x, batch_size:list = 64, hyperedge_att
             if model.supports_hyperedge_weight:
                 kwargs["hyperedge_weight"] = hypergraph.hyperedge_weight[batch_hyperedges].to(device)
             batch_preds = model(x[batch_hypernodes].to(device), batch_hyperedge_index.to(device), **kwargs)
-            batch_train_mask = hypergraph.train_mask[batch_hypernodes]
             loss = loss_fn(batch_preds[batch_train_mask.to(device)], hypergraph.y[batch_hypernodes][batch_train_mask].to(device))
             loss.backward()
             optimizer.step()
@@ -201,13 +207,16 @@ def train_HGNN_batches(model, hypergraph, x, batch_size:list = 64, hyperedge_att
                 batch_hyperedge_index = randomly_sorted_hyperedge_index[:, b:b+batch_size].clone()
                 batch_hypernodes, batch_hyperedge_index[0] = torch.unique(batch_hyperedge_index[0], sorted=True, return_inverse=True)
                 batch_hyperedges, batch_hyperedge_index[1] = torch.unique(batch_hyperedge_index[1], sorted=True, return_inverse=True)
+                batch_val_mask = hypergraph.val_mask[batch_hypernodes]
+                if batch_val_mask.sum()==0:
+                    continue
+
                 kwargs = {}
                 if model.supports_hyperedge_attr:
                     kwargs["hyperedge_attr"] = hyperedge_attr[batch_hyperedges].to(device)
                 if model.supports_hyperedge_weight:
                     kwargs["hyperedge_weight"] = hypergraph.hyperedge_weight[batch_hyperedges].to(device)
                 batch_preds = model(x[batch_hypernodes].to(device), batch_hyperedge_index.to(device), **kwargs)
-                batch_val_mask = hypergraph.val_mask[batch_hypernodes]
                 loss += loss_fn(batch_preds[batch_val_mask.to(device)], hypergraph.y[batch_hypernodes][batch_val_mask].to(device))
                 preds[batch_hypernodes] = batch_preds
             loss /= ceil(hypergraph.hyperedge_index.shape[1] / batch_size)
