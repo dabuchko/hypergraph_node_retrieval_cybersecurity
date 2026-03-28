@@ -141,7 +141,7 @@ class PMA(MessagePassing):
 
         # propagate_type: (x: OptPairTensor, alpha: OptPairTensor)
 #         ipdb.set_trace()
-        out = self.propagate(edge_index, x=x_V, alpha=alpha_r, size=(edge_index[0].max().item()+1, edge_index[1].max().item()+1))
+        out = self.propagate(edge_index, x=x_V, alpha=alpha_r, size=(x.shape[0], edge_index[1].max().item()+1))
 
         alpha = self._alpha
         self._alpha = None
@@ -319,7 +319,7 @@ class HalfNLHconv(MessagePassing):
         else:
             x = F.relu(self.f_enc(x))
             x = F.dropout(x, p=self.dropout, training=self.training)
-            x = self.propagate(edge_index, x=x, size=(edge_index[0].max().item()+1, edge_index[1].max().item()+1))
+            x = self.propagate(edge_index, x=x, size=(x.shape[0], edge_index[1].max().item()+1))
             x = F.relu(self.f_dec(x))
             
         return x
