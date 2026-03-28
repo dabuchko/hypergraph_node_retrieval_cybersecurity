@@ -141,7 +141,7 @@ class PMA(MessagePassing):
 
         # propagate_type: (x: OptPairTensor, alpha: OptPairTensor)
 #         ipdb.set_trace()
-        out = self.propagate(edge_index, x=x_V, alpha=alpha_r, size=(x.shape[0], edge_index[1].max().item()+1))
+        out = self.propagate(edge_index, x=x_V, alpha=alpha_r, size=size)
 
         alpha = self._alpha
         self._alpha = None
@@ -310,16 +310,18 @@ class HalfNLHconv(MessagePassing):
                 self.f_dec.reset_parameters()
 #         self.bn.reset_parameters()
 
-    def forward(self, x, edge_index):
+    def forward(self, x, edge_index, target_num = None):
         """
         input -> MLP -> Prop
         """
+        if target_num==None:
+            target_num = edge_index[1].max().item()+1
         if self.attention:
-            x = self.prop(x, edge_index)
+            x = self.prop(x, edge_index, size=(x.shape[0], target_num))
         else:
             x = F.relu(self.f_enc(x))
             x = F.dropout(x, p=self.dropout, training=self.training)
-            x = self.propagate(edge_index, x=x, size=(x.shape[0], edge_index[1].max().item()+1))
+            x = self.propagate(edge_index, x=x, size=(x.shape[0], target_num))
             x = F.relu(self.f_dec(x))
             
         return x
@@ -469,16 +471,18 @@ class SetGNN(nn.Module):
 #             data.V2Eedge_index[0] contains nodes and data.V2Eedge_index[1] contains hyperedges
         cidx = hyperedge_index[1].min()
         hyperedge_index[1] -= cidx  # make sure we do not waste memory
+        num_nodes = x.shape[0]
+        num_edges = int(hyperedge_index[1].max().item()) + 1
         reversed_edge_index = torch.stack(
             [hyperedge_index[1], hyperedge_index[0]], dim=0)
         if self.GPR:
             xs = []
             xs.append(F.relu(self.MLP(x)))
             for i, _ in enumerate(self.V2EConvs):
-                x = F.relu(self.V2EConvs[i](x, hyperedge_index))
+                x = F.relu(self.V2EConvs[i](x, hyperedge_index, num_edges))
 #                 x = self.bnV2Es[i](x)
                 x = F.dropout(x, p=self.dropout, training=self.training)
-                x = self.E2VConvs[i](x, reversed_edge_index)
+                x = self.E2VConvs[i](x, reversed_edge_index, num_nodes)
                 x = F.relu(x)
                 xs.append(x)
 #                 x = self.bnE2Vs[i](x)
@@ -489,11 +493,11 @@ class SetGNN(nn.Module):
         else:
             x = F.dropout(x, p=0.2, training=self.training) # Input dropout
             for i, _ in enumerate(self.V2EConvs):
-                x = F.relu(self.V2EConvs[i](x, hyperedge_index))
+                x = F.relu(self.V2EConvs[i](x, hyperedge_index, num_edges))
 #                 x = self.bnV2Es[i](x)
                 x = F.dropout(x, p=self.dropout, training=self.training)
                 x = F.relu(self.E2VConvs[i](
-                    x, reversed_edge_index))
+                    x, reversed_edge_index, num_nodes))
 #                 x = self.bnE2Vs[i](x)
                 x = F.dropout(x, p=self.dropout, training=self.training)
             x = self.classifier(x)
