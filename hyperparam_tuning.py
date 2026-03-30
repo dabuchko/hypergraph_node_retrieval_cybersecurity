@@ -356,7 +356,7 @@ if __name__ == '__main__':
         help="Strategies to handle imbalance.")
     args = parser.parse_args([] if "__file__" not in globals() else None)
     if args.hyperparam_ranges=="":
-        if args.dataset=="CiscoEmail" or args.dataset=="SpamAssassin" or args.dataset=="BCCC-VulSCs-2023":
+        if args.dataset=="CiscoEmail" or args.dataset=="SpamAssassin":
             args.hyperparam_ranges = "hyperparam_ranges_s.json"
         else:
             args.hyperparam_ranges = "hyperparam_ranges_l.json"
