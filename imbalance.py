@@ -48,4 +48,6 @@ def hyperedge_selection(hypergraph: Hypergraph, l: int = 2, beta: float = 0.5):
     hypergraph.num_edges = int(keep.sum().item())
     new_indexes[keep] = torch.arange(hypergraph.num_edges)
     hypergraph.hyperedge_index[1] = new_indexes[hypergraph.hyperedge_index[1]]
+    if hypergraph.hyperedge_weight!=None:
+        hypergraph.hyperedge_weight = hypergraph.hyperedge_weight[keep]
     return hypergraph
