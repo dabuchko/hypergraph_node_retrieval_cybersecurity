@@ -31,13 +31,46 @@ class BCCCVulSCs2023Dataset(Hypergraph):
         X = vectorizer.fit_transform(code)
         rows, cols = X.nonzero()
         hyperedge_index = torch.vstack((torch.tensor(rows).long(), torch.tensor(cols).long()))
+        del X, rows, cols
+        # define hyperedge weights
+        hyperedge_weight = torch.ones(((hyperedge_index[1].max().item())+1,))
+        for k, v in vectorizer.vocabulary_.items():
+            hyperedge_weight[v] = k.count(" ") + 1
+        # merge duplicated columns
+        hyperedge_index = hyperedge_index[:, torch.argsort(hyperedge_index[0])]
+        hyperedge_index = hyperedge_index[:, torch.argsort(hyperedge_index[1])]
+        hyperedge_1 = hyperedge_index[1, 0].item()
+        hyperedge_2 = hyperedge_index[1, 0].item()
+        incident_hypernodes_1 = []
+        incident_hypernodes_2 = []
+        hypernode_pointer = 0
+        similar = True
+        for i in range(hyperedge_index.shape[1]):
+            hn = hyperedge_index[0, i].item()
+            he = hyperedge_index[1, i].item()
+            if he!=hyperedge_2:
+                if similar:
+                    hyperedge_weight[hyperedge_2] += hyperedge_weight[hyperedge_1]
+                    hyperedge_weight[hyperedge_1] = 0
+                incident_hypernodes_1 = incident_hypernodes_2
+                incident_hypernodes_2 = []
+                hypernode_pointer = 0
+                hyperedge_1 = hyperedge_2
+                hyperedge_2 = he
+                similar = True
+            incident_hypernodes_2.append(hn)
+            if similar and len(incident_hypernodes_1)>hypernode_pointer and incident_hypernodes_1[hypernode_pointer]==hn:
+                hypernode_pointer += 1
+            else:
+                similar = False
+        hyperedge_index = hyperedge_index[:, hyperedge_weight[hyperedge_index[1]]!=0]
+        new_hyperedge_indexes = torch.zeros((int(hyperedge_index[1].max().item()) + 1,), dtype=torch.long)
+        new_hyperedge_indexes[hyperedge_weight!=0] = torch.arange((hyperedge_weight!=0).sum())
+        hyperedge_index[1] = new_hyperedge_indexes[hyperedge_index[1]]
+        hyperedge_weight = hyperedge_weight[hyperedge_weight!=0]
         # generate mask
         mask = torch.rand((labels.shape[0],))
         train_mask = mask < train_size
         val_mask = torch.logical_and(train_size < mask, mask < (train_size+val_size))
         test_mask = torch.logical_and(~train_mask, ~val_mask)
-        # define hyperedge weights
-        hyperedge_weight = torch.ones((X.shape[1],))
-        for k, v in vectorizer.vocabulary_.items():
-            hyperedge_weight[v] = k.count(" ") + 1
         super().__init__(hyperedge_index, labels, hyperedge_weight, train_mask, val_mask, test_mask)
