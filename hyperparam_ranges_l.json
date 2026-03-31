@@ -13,15 +13,15 @@
         "mode": ["normalized", "side normalized", "unnormalized"]
     },
     "Node2Vec": {
-        "embedding_dim": [8, 16, 32],
-        "walk_length": [6],
-        "context_size": [2, 3],
-        "walks_per_node": [1, 2],
-        "p": [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2, 4],
-        "q": [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2, 4],
-        "num_negative_samples": [1, 2, 4],
+        "embedding_dim": [8, 16, 32, 64, 128],
+        "walk_length": [32, 64, 128],
+        "context_size": [4, 8, 16],
+        "walks_per_node": [8, 16, 32],
+        "p": [0.25, 0.5, 1.0, 2.0, 4.0],
+        "q": [0.25, 0.5, 1.0, 2.0, 4.0],
+        "num_negative_samples": [4, 8, 16],
         "sparse": [true],
-        "batch_size": [1024, 2048, 4096, 8192]
+        "batch_size": [64, 128, 256, 512]
     },
     "Logistic Regression": {
         "C": [0.001, 0.01, 0.1, 1.0, 10, 100, 1000]
@@ -59,32 +59,35 @@
         "dropout": [0.0, 0.2, 0.4, 0.6, 0.8],
         "aggr": ["mean", "max"],
         "num_neighbors": [1, 2, 4, 8, 16, 32, 64],
-        "batch_size": [1024, 2048, 4096, 8192]
+        "batch_size": [4096, 8192, 16384, 32768]
     },
     "Label Propagation": {
-        "num_layers": [1, 2, 3, 4],
+        "num_layers": [1, 2, 3, 4, 5, 6, 7, 8],
         "alpha": [0.2, 0.4, 0.6, 0.8, 1.0]
     },
     "CSP": {
-        "num_layers": [1, 2, 3, 4]
+        "num_layers": [1, 2, 3, 4, 5, 6, 7, 8]
     },
     "HGNN": {
         "hidden_channels": [8, 16, 32],
         "num_layers": [1, 2, 3, 4],
         "dropout": [0.0, 0.2, 0.4, 0.6, 0.8],
-        "bias": [false, true]
+        "bias": [false, true],
+        "act": [null, "tanh", "relu"]
     },
     "HCHA": {
         "num_layers": [1, 2, 3, 4],
         "heads": [1, 2, 4, 8],
         "dropout": [0.0, 0.2, 0.4, 0.6, 0.8],
-        "bias": [false, true]
+        "bias": [false, true],
+        "act": [null, "tanh", "relu"]
     },
     "HyperGCN": {
         "hidden_channels": [8, 16, 32],
         "num_layers": [1, 2],
         "dropout": [0.0, 0.2, 0.4, 0.6, 0.8],
-        "bias": [false, true]
+        "bias": [false, true],
+        "act": [null, "tanh", "relu"]
     },
     "UniGCN": {
         "hidden_channels": [8, 16, 32],
@@ -158,19 +161,21 @@
         "heads": [1, 2, 4, 8],
         "nonlinear_inbetween": [false, true],
         "alpha": [0.0, 0.5, 1.0, 2.0],
-        "beta": [0.0, 0.5, 1.0, 2.0]
+        "beta": [0.0, 0.5, 1.0, 2.0],
+        "act": [null, "tanh", "relu"]
     },
     "HyperSAGE": {
         "hidden_channels": [8, 16, 32],
         "p": [-1, 0.01, 0.5, 1.0, 2.0],
         "num_layers": [1, 2, 3, 4],
         "dropout": [0.0, 0.2, 0.4, 0.6, 0.8],
-        "batch_size": [8192, 16384, 32768, 65536]
+        "batch_size": [4096, 8192, 16384, 32768],
+        "act": [null, "tanh", "relu"]
     },
-    "MaxSum": {
+    "MinSum": {
         "hidden_channels": [8, 16, 32],
         "num_layers": [1, 2, 3, 4],
         "dropout": [0.0, 0.2, 0.4, 0.6, 0.8],
-        "batch_size": [8192, 16384, 32768, 65536]
+        "batch_size": [4096, 8192, 16384, 32768]
     }
 }
