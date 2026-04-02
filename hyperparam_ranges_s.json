@@ -20,7 +20,6 @@
         "p": [0.25, 0.5, 1.0, 2.0, 4.0],
         "q": [0.25, 0.5, 1.0, 2.0, 4.0],
         "num_negative_samples": [4, 8, 16],
-        "sparse": [true],
         "batch_size": [64, 128, 256, 512]
     },
     "Logistic Regression": {
