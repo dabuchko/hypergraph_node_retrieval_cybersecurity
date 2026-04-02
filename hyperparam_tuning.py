@@ -124,6 +124,7 @@ def main(args: argparse.ArgumentParser):
     
     # create dataset
     data = DATASETS[args.dataset]()
+    # data = torch.load("bccc.pt", weights_only=False)
     weight_true_class = None
     if args.imbalance=="weight":
         weight_true_class = data.y.sum().float()
@@ -357,8 +358,5 @@ if __name__ == '__main__':
         help="Strategies to handle imbalance.")
     args = parser.parse_args([] if "__file__" not in globals() else None)
     if args.hyperparam_ranges=="":
-        if args.dataset=="CiscoEmail" or args.dataset=="SpamAssassin":
-            args.hyperparam_ranges = "hyperparam_ranges_s.json"
-        else:
-            args.hyperparam_ranges = "hyperparam_ranges_l.json"
+        args.hyperparam_ranges = f"hyperparam_ranges_{args.dataset}.json"
     main(args)
