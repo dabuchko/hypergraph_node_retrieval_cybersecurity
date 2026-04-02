@@ -193,7 +193,7 @@ def main(args: argparse.ArgumentParser):
                     node2vec = EMBEDDING_METHODS[args.embedding](edge_index=embedding_graph.edge_index,
                                                                  num_nodes=embedding_graph.num_nodes,
                                                                  **embedding_hp_set_copy).to(device)
-                    x = fit_transform_node2vec(node2vec, embedding_hp_set["batch_size"], device).cpu()
+                    x = fit_transform_node2vec(node2vec, embedding_hp_set["batch_size"], args.num_workers, device).cpu()
                 else:
                     embedding_class = EMBEDDING_METHODS[args.embedding](**embedding_hp_set)
                     if isinstance(embedding_class, RandomGaussian):
@@ -267,7 +267,7 @@ def main(args: argparse.ArgumentParser):
                     del method_hp_set_copy["batch_size"]
                     model = GRAPH_METHODS[args.graph_based](**method_hp_set_copy)
                     preds = train_GNN_batches(model, graph, method_hp_set["num_neighbors"], args.patience,
-                                        args.delta, method_hp_set["batch_size"], weight_true_class, device)
+                                        args.delta, method_hp_set["batch_size"], args.num_workers, weight_true_class, device)
                 else:
                     model = GRAPH_METHODS[args.graph_based](**method_hp_set)
                     preds = train_GNN(model, graph, args.patience, args.delta, weight_true_class, device)
@@ -283,7 +283,7 @@ def main(args: argparse.ArgumentParser):
                     method_hp_set_copy = method_hp_set.copy()
                     del method_hp_set_copy["batch_size"]
                     model = HYPERGRAPH_METHODS[args.graph_based](**method_hp_set_copy)
-                    preds = train_HGNN_batches(model, data, x, method_hp_set["batch_size"], hyperedge_attr,
+                    preds = train_HGNN_batches(model, data, x, method_hp_set["batch_size"], args.num_workers, hyperedge_attr,
                                                args.patience, args.delta, weight_true_class, device)
                 else:
                     model = HYPERGRAPH_METHODS[args.graph_based](**method_hp_set)
@@ -343,6 +343,7 @@ if __name__ == '__main__':
     parser.add_argument("--patience", default=5, type=int, help="Maximum number of epochs for which" \
     "loss decrease less than delta may be tollerated.")
     parser.add_argument("--seed", default=42, type=int, help="Random seed.")
+    parser.add_argument("--num_workers", default=8, type=int, help="Number of parallel workers to use. Use 0 to run everything in the main thread.")
     parser.add_argument("--threads", default=16, type=int, help="Maximum number of threads to use.")
     parser.add_argument("--hyperparam_ranges", default="",
                         type=str, help="Path to the JSON file containing hyperparameter ranges" \
