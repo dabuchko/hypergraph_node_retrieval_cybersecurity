@@ -7,6 +7,7 @@ imbalanced-learn~=0.14.1
 
 torch
 torch_geometric
+pyg-lib~=0.5.0
 torch_cluster~=1.6.3
 torch-geometric~=2.7.0
 torch_scatter~=2.1.2
