@@ -173,8 +173,8 @@ class HGNN_batch_sampler(torch.utils.data.Sampler):
         self.order = torch.argsort(torch.rand((self.hypergraph.num_nodes,))[self.hypergraph.hyperedge_index[0]], stable=True).tolist()
     def collate(self, batch_hyperedge_index):
         batch_hyperedge_index = torch.stack(batch_hyperedge_index).T
-        batch_hypernodes, batch_hyperedge_index[0] = torch.unique(batch_hyperedge_index[0], sorted=True, return_inverse=True)
-        batch_hyperedges, batch_hyperedge_index[1] = torch.unique(batch_hyperedge_index[1], sorted=True, return_inverse=True)
+        batch_hypernodes, batch_hyperedge_index[0] = torch.unique(batch_hyperedge_index[0], return_inverse=True)
+        batch_hyperedges, batch_hyperedge_index[1] = torch.unique(batch_hyperedge_index[1], return_inverse=True)
         if self.val:
             batch_mask = self.hypergraph.val_mask[batch_hypernodes]
         else:
@@ -206,10 +206,11 @@ def train_HGNN_batches(model, hypergraph, x, batch_size:list = 64, num_workers: 
     batch_sampler = HGNN_batch_sampler(hypergraph, batch_size)
     dataloader = torch.utils.data.DataLoader(hypergraph.hyperedge_index.T, batch_sampler=batch_sampler, num_workers=num_workers, collate_fn=batch_sampler.collate)
     while current_patience>=0:
+        batch_sampler.train()
+        model.train()
         for batch_hypernodes, batch_hyperedges, batch_hyperedge_index, batch_train_mask in dataloader:
             if batch_train_mask.sum()==0:
                 continue
-            model.train()
             optimizer.zero_grad()
             kwargs = {}
             if model.supports_hyperedge_attr:
@@ -222,11 +223,11 @@ def train_HGNN_batches(model, hypergraph, x, batch_size:list = 64, num_workers: 
             optimizer.step()
         
         batch_sampler.eval()
+        model.eval()
         with torch.no_grad():
             loss = torch.tensor(0.0, device=device)
             preds = torch.zeros_like(hypergraph.y, device=device)
             for batch_hypernodes, batch_hyperedges, batch_hyperedge_index, batch_val_mask in dataloader:
-                model.eval()
                 kwargs = {}
                 if model.supports_hyperedge_attr:
                     kwargs["hyperedge_attr"] = hyperedge_attr[batch_hyperedges].to(device)
