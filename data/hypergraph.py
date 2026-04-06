@@ -201,6 +201,14 @@ class Hypergraph:
         return hetero_data
     
     def to(self, device):
+        """
+        Moves the hypergraph data to the specified device.
+        
+        :param device: Device string or torch.device where the hypergraph data should be moved to.
+        :type device: str or torch.device
+        :return: The current hypergraph object with all tensor attributes moved to the specified device.
+        :rtype: Hypergraph
+        """
         for key, value in vars(self).items():
             if key!="num_nodes" and key!="num_edges" and isinstance(value, torch.Tensor):
                 vars(self)[key] = value.to(device)

@@ -5,7 +5,27 @@ from sklearn.feature_extraction.text import CountVectorizer
 import torch
 
 class SpamAssassinDataset(Hypergraph):
-    def __init__(self, train_size=0.6, val_size=0.2, ngram_range=(1,3)):
+    """
+    Dataset class for constrcuting a hypergraph representation of the original SpamAssassin dataset.
+    Each hypernode represents email, and each hyperedge represents an n-gram,
+    where n-gram range is provided in initialization argument. Hypernode label is 1 if
+    the email is malicious (spam, phishing, etc.) and 0 otherwise.
+    Hyperedge weight is defined as the number of tokens in the n-gram.
+    """
+    def __init__(self, train_size: float = 0.6, val_size: float = 0.2, ngram_range: tuple[int, int] = (1,3)):
+        """
+        Initializes a hypergraph representation of the SpamAssassin dataset.
+        
+        :param train_size: Float number between 0 and 1, representing the portion
+        of nodes that will be included in the training set.
+        :type train_size: float
+        :param val_size: Float number between 0 and 1, representing the portion
+        of nodes that will be included in the validation set.
+        :type val_size: float
+        :param ngram_range: Tuple of two integers, representing the interval of
+        n-gram sizes that will be used for generating hyperedges.
+        :type ngram_range: tuple[int, int]
+        """
         ds = load_dataset("talby/spamassassin", "text")
         tokenizer = Tokenizer.from_pretrained("openai-community/gpt2")
         labels = torch.tensor(ds["train"]["label"], dtype=bool)
