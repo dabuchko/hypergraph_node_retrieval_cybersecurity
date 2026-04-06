@@ -190,7 +190,7 @@ class UniGCNIIConv(MessagePassing):
         out = self.propagate(hyperedge_index.flip([0]), x=out, size=(num_edges, num_nodes))
         out *= D[:, None]
         out = ((1 - self.alpha) * out) + (self.alpha * x)
-        weight = self._W + torch.eye(self._W.shape[0], self._W.shape[1], device=self._W.device)
+        weight = (self.beta*self._W) + ((1-self.beta) * torch.eye(self._W.shape[0], self._W.shape[1], device=self._W.device))
         return out @ weight
 
 class UniGCNII(BasicHGNN):
