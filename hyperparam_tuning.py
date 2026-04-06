@@ -124,7 +124,6 @@ def main(args: argparse.ArgumentParser):
     
     # create dataset
     data = DATASETS[args.dataset]()
-    # data = torch.load("bccc.pt", weights_only=False)
     weight_true_class = None
     if args.imbalance=="weight":
         weight_true_class = data.y.sum().float()
@@ -320,6 +319,8 @@ def main(args: argparse.ArgumentParser):
             import traceback
             traceback.print_exc()
             print(f"Exception {e.__class__} occured with hyperparameters: {embedding_hp_set} {method_hp_set}")
+            if "model" in locals():
+                del model
     print(best_hyperparameters)
 
 
