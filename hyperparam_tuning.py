@@ -6,6 +6,7 @@ import os
 import datetime
 import re
 import copy
+import gc
 from imblearn.under_sampling import RandomUnderSampler, TomekLinks
 from imblearn.over_sampling import RandomOverSampler, SMOTE
 from time import time
@@ -321,6 +322,10 @@ def main(args: argparse.ArgumentParser):
             print(f"Exception {e.__class__} occured with hyperparameters: {embedding_hp_set} {method_hp_set}")
             if "model" in locals():
                 del model
+            if torch.cuda.is_available():
+                torch.cuda.synchronize()
+                torch.cuda.empty_cache()
+            gc.collect()
     print(best_hyperparameters)
 
 
