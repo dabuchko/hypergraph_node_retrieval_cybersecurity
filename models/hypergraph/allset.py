@@ -1,5 +1,7 @@
-# Copied from the original implementation:
-# https://github.com/jianhao2016/AllSet/tree/main
+"""
+Copied from the original implementation with slight modifications:
+https://github.com/jianhao2016/AllSet/tree/main
+"""
 
 import torch
 
@@ -505,17 +507,82 @@ class SetGNN(nn.Module):
         return x
 
 class AllDeepSets(SetGNN):
-    def __init__(self, in_channels, hidden_channels, num_layers, out_channels,
-                 dropout, classifier_hidden, classifier_num_layers,
-                 normalization, deepset_input_norm, GPR):
+    """
+    AllDeepSets hypergraph neural network model.
+    """
+    def __init__(self, in_channels: int, hidden_channels: int, num_layers: int,
+                 out_channels: int, dropout: float, classifier_hidden: int,
+                 classifier_num_layers: int, normalization: str, deepset_input_norm: bool,
+                 GPR: bool):
+        """
+        AllDeepSets initialization method.
+        
+        :param in_channels: Number of input features for each hypernode.
+        :type in_channels: int
+        :param hidden_channels: Number of hidden units in the model.
+        :type hidden_channels: int
+        :param num_layers: Number of layers in the model.
+        :type num_layers: int
+        :param out_channels: Number of output channels in the model.
+        :type out_channels: int
+        :param dropout: Dropout rate (between 0 and 1).
+        :type dropout: float
+        :param classifier_hidden: Number of hidden units in the classifier part of the model.
+        :type classifier_hidden: int
+        :param classifier_num_layers: Number of layers in the classifier part of the model.
+        :type classifier_num_layers: int
+        :param normalization: Normalization mode. One of the following should be used: 'ln' for Layer Normalization,
+        'bn' for Batch Normalization, and 'None' for no normalization.
+        :type normalization: str
+        :param deepset_input_norm: Whether to apply normalization to the input before aggregation and propagation.
+        :type deepset_input_norm: bool
+        :param GPR: Whether to use Generalized PageRank (GPR) for combining the outputs of different layers (True),
+        or just use the last layer result (False).
+        :type GPR: bool
+        """
         super().__init__(in_channels, hidden_channels, num_layers, out_channels,
                          dropout, classifier_hidden, classifier_num_layers, "sum",
                          normalization, deepset_input_norm, GPR, 1, False)
 
 class AllSetTransformer(SetGNN):
-    def __init__(self, in_channels, hidden_channels, num_layers, out_channels,
-                 dropout, classifier_hidden, classifier_num_layers, aggregate,
-                 normalization, deepset_input_norm, GPR, heads):
+    """
+    AllSetTransformer hypergraph neural network model.
+    """
+    def __init__(self, in_channels: int, hidden_channels: int, num_layers: int,
+                 out_channels: int, dropout: float, classifier_hidden: int,
+                 classifier_num_layers: int, aggregate: str,
+                 normalization: str, deepset_input_norm: bool, GPR: bool, heads: int):
+        """
+        AllSetTransformer initialization method.
+        
+        :param in_channels: Number of input features for each hypernode.
+        :type in_channels: int
+        :param hidden_channels: Number of hidden units in the model.
+        :type hidden_channels: int
+        :param num_layers: Number of layers in the model.
+        :type num_layers: int
+        :param out_channels: Number of output channels in the model.
+        :type out_channels: int
+        :param dropout: Dropout rate (between 0 and 1).
+        :type dropout: float
+        :param classifier_hidden: Number of hidden units in the classifier part of the model.
+        :type classifier_hidden: int
+        :param classifier_num_layers: Number of layers in the classifier part of the model.
+        :type classifier_num_layers: int
+        :param aggregate: Aggregation method to use during propagation. According to the
+        original implementation, "sum" and "mean" are common choices to use.
+        :type aggregate: str
+        :param normalization: Normalization mode. One of the following should be used: 'ln' for Layer Normalization,
+        'bn' for Batch Normalization, and 'None' for no normalization.
+        :type normalization: str
+        :param deepset_input_norm: Whether to apply normalization to the input before aggregation and propagation.
+        :type deepset_input_norm: bool
+        :param GPR: Whether to use Generalized PageRank (GPR) for combining the outputs of different layers (True),
+        or just use the last layer result (False).
+        :type GPR: bool
+        :param heads: Number of heads to use in the multi-head attention.
+        :type heads: int
+        """
         super().__init__(in_channels, hidden_channels, num_layers, out_channels,
                          dropout, classifier_hidden, classifier_num_layers, aggregate,
                          normalization, deepset_input_norm, GPR, heads, True)

@@ -1,4 +1,4 @@
-import torch
+from torch import Tensor
 import torch.nn.functional as F
 from torch.nn import Linear
 from torch_geometric.nn.conv import MessagePassing
@@ -6,7 +6,34 @@ from .basic_hgnn import BasicHGNN
 from torch_geometric.utils import scatter
 
 class HNHNConv(MessagePassing):
-    def __init__(self, in_channels, hidden_channels, out_channels, heads=1, nonlinear_inbetween=True, alpha=1.0, beta=1.0, **kwargs):
+    """
+    HNHN convolution layer as described in:
+    HNHN: Hypergraph Networks with Hyperedge Neurons
+    https://arxiv.org/abs/2006.12278
+    """
+    def __init__(self, in_channels: int, hidden_channels: int, out_channels: int,
+                 heads: int = 1, nonlinear_inbetween: bool = True, alpha: float = 1.0,
+                 beta: float = 1.0, **kwargs):
+        """
+        Docstring for __init__
+        
+        :param self: Description
+        :param in_channels: Description
+        :type in_channels: int
+        :param hidden_channels: Description
+        :type hidden_channels: int
+        :param out_channels: Description
+        :type out_channels: int
+        :param heads: Description
+        :type heads: int
+        :param nonlinear_inbetween: Description
+        :type nonlinear_inbetween: bool
+        :param alpha: Description
+        :type alpha: float
+        :param beta: Description
+        :type beta: float
+        :param kwargs: Description
+        """
         super(HNHNConv, self).__init__("add", node_dim=0, **kwargs)
 
         self.in_channels = in_channels
@@ -32,16 +59,15 @@ class HNHNConv(MessagePassing):
         # glorot(self.weight_e2v)
         # zeros(self.bias)
 
-    def forward(self, x, hyperedge_index):
-        r"""
-        Args:
-            x (Tensor): Node feature matrix :math:`\mathbf{X}`
-            hyperedge_index (LongTensor): The hyperedge indices, *i.e.*
-                the sparse incidence matrix
-                :math:`\mathbf{H} \in {\{ 0, 1 \}}^{N \times M}` mapping from
-                nodes to edges.
-            hyperedge_weight (Tensor, optional): Sparse hyperedge weights
-                :math:`\mathbf{W} \in \mathbb{R}^M`. (default: :obj:`None`)
+    def forward(self, x: Tensor, hyperedge_index: Tensor):
+        """
+        Forward pass of HNHN convolutional layer.
+        
+        :param x: Feature matrix of shape [num_nodes, num_features].
+        :type x: Tensor
+        :param hyperedge_index: The hyperedge indices of shape [2, K],
+        where the first row contains hypernode indices and the second -- hyperedge indices.
+        :type hyperedge_index: Tensor
         """
         num_nodes, num_edges = x.size(0), 0
         if hyperedge_index.numel() > 0:
@@ -105,6 +131,11 @@ class HNHNConv(MessagePassing):
 
 
 class HNHN(BasicHGNN):
+    """
+    HNHN model as described in:
+    HNHN: Hypergraph Networks with Hyperedge Neurons
+    https://arxiv.org/abs/2006.12278
+    """
     supports_hyperedge_weight = False
     supports_hyperedge_attr = False
     def init_conv(self, in_channels: int, out_channels: int, heads: int = 1, nonlinear_inbetween=True, alpha=1.0, beta=1.0):

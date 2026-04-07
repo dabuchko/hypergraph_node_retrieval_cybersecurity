@@ -1,6 +1,6 @@
 import torch
 from data import Hypergraph
-from models.hypergraph.unignn import HyperedgeAggregation
+from models.hypergraph.hyperedge_aggr import HyperedgeAggregation
 
 def hyper_undersampling(hypergraph: Hypergraph, l: int = 3, alpha: float = 0.1):
     m = HyperedgeAggregation()

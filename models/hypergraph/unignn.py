@@ -3,21 +3,43 @@ from torch import Tensor, ones
 from .basic_hgnn import BasicHGNN
 from torch_geometric.nn.conv import MessagePassing
 from torch_geometric.utils import scatter
+from .hyperedge_aggr import HyperedgeAggregation
 
-class HyperedgeAggregation(MessagePassing):
-    def __init__(self, aggr="mean", aggr_kwargs=None, flow="source_to_target", node_dim=-2, decomposed_layers=1):
-        super().__init__(aggr, aggr_kwargs=aggr_kwargs, flow=flow, node_dim=node_dim, decomposed_layers=decomposed_layers)
-    def forward(self, x: Tensor, hyperedge_index: Tensor, size=None):
-        return self.propagate(hyperedge_index, x=x, size=size)
 
 class UniGCNConv(MessagePassing):
+    """
+    UniGCN hypergraph convolution layer as described in:
+    UniGNN: a Unified Framework for Graph and Hypergraph Neural Networks
+    https://arxiv.org/abs/2105.00956
+    """
     def __init__(self, in_channels: int, out_channels: int, hyperedge_aggr="mean", bias: bool = False):
+        """
+        Initializes the UniGCN convolution layer.
+        
+        :param in_channels: Number of input features.
+        :type in_channels: int
+        :param out_channels: Number of output channels.
+        :type out_channels: int
+        :param hyperedge_aggr: The aggregation scheme to use for hyperedges (commonly "sum" or "mean").
+        All available aggregation methods are described in torch_geometric.nn.aggr.
+        :param bias: Whether to use bias in the linear transformation. (default: False)
+        :type bias: bool
+        """
         super().__init__(hyperedge_aggr, aggr_kwargs=None, flow="source_to_target", node_dim=-2, decomposed_layers=1)
         self.lin = torch.nn.Linear(in_channels, out_channels, bias=bias)
         self.hyperedge_aggr = hyperedge_aggr
         assert hyperedge_aggr=="mean" or hyperedge_aggr=="sum"
         
     def forward(self, x: Tensor, hyperedge_index: Tensor):
+        """
+        Forward pass of UniGCN convolutional layer.
+        
+        :param x: Feature matrix of shape [num_nodes, num_features].
+        :type x: Tensor
+        :param hyperedge_index: The hyperedge indices of shape [2, K],
+        where the first row contains hypernode indices and the second -- hyperedge indices.
+        :type hyperedge_index: Tensor
+        """
         if len(x.shape)<2:
             x = x[:, None]
         # calculate the number of nodes and edges
@@ -49,6 +71,11 @@ class UniGCNConv(MessagePassing):
         return out
 
 class UniGCN(BasicHGNN):
+    """
+    UniGCN hypergraph model as described in:
+    UniGNN: a Unified Framework for Graph and Hypergraph Neural Networks
+    https://arxiv.org/abs/2105.00956
+    """
     supports_hyperedge_weight = False
     supports_hyperedge_attr = False
 
@@ -56,7 +83,26 @@ class UniGCN(BasicHGNN):
         return UniGCNConv(in_channels, out_channels, hyperedge_aggr, bias)
 
 class UniGATConv(MessagePassing):
+    """
+    UniGAT hypergraph convolution layer as described in:
+    UniGNN: a Unified Framework for Graph and Hypergraph Neural Networks
+    https://arxiv.org/abs/2105.00956
+    """
     def __init__(self, in_channels: int, out_channels: int, hyperedge_aggr="mean", bias: bool = False, negative_slope: float = 0.01):
+        """
+        Initializes the UniGAT convolution layer.
+        
+        :param in_channels: Number of input features.
+        :type in_channels: int
+        :param out_channels: Number of output channels.
+        :type out_channels: int
+        :param hyperedge_aggr: The aggregation scheme to use for hyperedges (commonly "sum" or "mean").
+        All available aggregation methods are described in torch_geometric.nn.aggr.
+        :param bias: Whether to use bias in the linear transformation. (default: False)
+        :type bias: bool
+        :param negative_slope: Negative slope for the LeakyReLU activation used in attention mechanism. (default: 0.01)
+        :type negative_slope: float
+        """
         super().__init__(hyperedge_aggr, aggr_kwargs=None, flow="source_to_target", node_dim=-2, decomposed_layers=1)
         self.lin = torch.nn.Linear(in_channels, out_channels, bias=bias)
         self.a = torch.nn.Parameter(torch.empty((out_channels*2,)))
@@ -64,6 +110,15 @@ class UniGATConv(MessagePassing):
         self.negative_slope = negative_slope
         
     def forward(self, x: Tensor, hyperedge_index: Tensor):
+        """
+        Forward pass of UniGAT convolutional layer.
+        
+        :param x: Feature matrix of shape [num_nodes, num_features].
+        :type x: Tensor
+        :param hyperedge_index: The hyperedge indices of shape [2, K],
+        where the first row contains hypernode indices and the second -- hyperedge indices.
+        :type hyperedge_index: Tensor
+        """
         if len(x.shape)<2:
             x = x[:, None]
         # calculate the number of nodes and edges
@@ -93,6 +148,11 @@ class UniGATConv(MessagePassing):
         return res
 
 class UniGAT(BasicHGNN):
+    """
+    UniGAT hypergraph model as described in:
+    UniGNN: a Unified Framework for Graph and Hypergraph Neural Networks
+    https://arxiv.org/abs/2105.00956
+    """
     supports_hyperedge_weight = False
     supports_hyperedge_attr = False
 
@@ -100,13 +160,39 @@ class UniGAT(BasicHGNN):
         return UniGATConv(in_channels, out_channels, hyperedge_aggr, bias)
 
 class UniGINConv(MessagePassing):
+    """
+    UniGIN hypergraph convolution layer as described in:
+    UniGNN: a Unified Framework for Graph and Hypergraph Neural Networks
+    https://arxiv.org/abs/2105.00956
+    """
     def __init__(self, in_channels: int, out_channels: int, hyperedge_aggr="mean", bias: bool = False):
+        """
+        Initializes the UniGIN convolution layer.
+        
+        :param in_channels: Number of input features.
+        :type in_channels: int
+        :param out_channels: Number of output channels.
+        :type out_channels: int
+        :param hyperedge_aggr: The aggregation scheme to use for hyperedges (commonly "sum" or "mean").
+        All available aggregation methods are described in torch_geometric.nn.aggr.
+        :param bias: Whether to use bias in the linear transformation. (default: False)
+        :type bias: bool
+        """
         super().__init__("sum", aggr_kwargs=None, flow="source_to_target", node_dim=-2, decomposed_layers=1)
         self.hyperedge_aggr = HyperedgeAggregation(hyperedge_aggr)
         self.lin = torch.nn.Linear(in_channels, out_channels, bias=bias)
         self.eps = torch.nn.Parameter(torch.rand(1))
         
     def forward(self, x: Tensor, hyperedge_index: Tensor):
+        """
+        Forward pass of UniGIN convolutional layer.
+        
+        :param x: Feature matrix of shape [num_nodes, num_features].
+        :type x: Tensor
+        :param hyperedge_index: The hyperedge indices of shape [2, K],
+        where the first row contains hypernode indices and the second -- hyperedge indices.
+        :type hyperedge_index: Tensor
+        """
         if len(x.shape)<2:
             x = x[:, None]
         # calculate the number of nodes and edges
@@ -122,6 +208,11 @@ class UniGINConv(MessagePassing):
         return out
 
 class UniGIN(BasicHGNN):
+    """
+    UniGIN hypergraph model as described in:
+    UniGNN: a Unified Framework for Graph and Hypergraph Neural Networks
+    https://arxiv.org/abs/2105.00956
+    """
     supports_hyperedge_weight = False
     supports_hyperedge_attr = False
 
@@ -129,12 +220,40 @@ class UniGIN(BasicHGNN):
         return UniGINConv(in_channels, out_channels, hyperedge_aggr, bias)
 
 class UniSAGEConv(MessagePassing):
+    """
+    UniSAGE hypergraph convolution layer as described in:
+    UniGNN: a Unified Framework for Graph and Hypergraph Neural Networks
+    https://arxiv.org/abs/2105.00956
+    """
     def __init__(self, in_channels: int, out_channels: int, sage_aggr="max", hyperedge_aggr="mean", bias: bool = False):
+        """
+        Initializes the UniSAGE convolution layer.
+        
+        :param in_channels: Number of input features.
+        :type in_channels: int
+        :param out_channels: Number of output channels.
+        :type out_channels: int
+        :param sage_aggr: The aggregation scheme to use for sage aggregation of hyperedges (commonly "sum" or "mean").
+        All available aggregation methods are described in torch_geometric.nn.aggr.
+        :param hyperedge_aggr: The aggregation scheme to use for hyperedges (commonly "sum" or "mean").
+        All available aggregation methods are described in torch_geometric.nn.aggr.
+        :param bias: Whether to use bias in the linear transformation. (default: False)
+        :type bias: bool
+        """
         super().__init__(sage_aggr, aggr_kwargs=None, flow="source_to_target", node_dim=-2, decomposed_layers=1)
         self.hyperedge_aggr = HyperedgeAggregation(hyperedge_aggr)
         self.lin = torch.nn.Linear(in_channels, out_channels, bias=bias)
         
     def forward(self, x: Tensor, hyperedge_index: Tensor):
+        """
+        Forward pass of UniSAGE convolutional layer.
+        
+        :param x: Feature matrix of shape [num_nodes, num_features].
+        :type x: Tensor
+        :param hyperedge_index: The hyperedge indices of shape [2, K],
+        where the first row contains hypernode indices and the second -- hyperedge indices.
+        :type hyperedge_index: Tensor
+        """
         if len(x.shape)<2:
             x = x[:, None]
         # calculate the number of nodes and edges
@@ -150,6 +269,11 @@ class UniSAGEConv(MessagePassing):
         return out
 
 class UniSAGE(BasicHGNN):
+    """
+    UniSAGE hypergraph model as described in:
+    UniGNN: a Unified Framework for Graph and Hypergraph Neural Networks
+    https://arxiv.org/abs/2105.00956
+    """
     supports_hyperedge_weight = False
     supports_hyperedge_attr = False
 
@@ -157,7 +281,26 @@ class UniSAGE(BasicHGNN):
         return UniSAGEConv(in_channels, out_channels, sage_aggr, hyperedge_aggr, bias)
 
 class UniGCNIIConv(MessagePassing):
+    """
+    UniGCNII hypergraph convolution layer as described in:
+    UniGNN: a Unified Framework for Graph and Hypergraph Neural Networks
+    https://arxiv.org/abs/2105.00956
+    """
     def __init__(self, in_channels: int, out_channels: int, alpha: float = 0.0, beta: float = 1.0, hyperedge_aggr="mean"):
+        """
+        Initializes the UniGCNII convolution layer.
+        
+        :param in_channels: Number of input features.
+        :type in_channels: int
+        :param out_channels: Number of output channels.
+        :type out_channels: int
+        :param alpha: Portion between 0.0 and 1.0 of previous layer output to include and current output to exclude (default: 0.0)
+        :type alpha: float
+        :param beta: Portion between 0.0 and 1.0 of weight matrix to include in linear transformation and portion of identity matrix to exclude (default: 1.0)
+        :type beta: float
+        :param hyperedge_aggr: The aggregation scheme to use for hyperedges (commonly "sum" or "mean").
+        All available aggregation methods are described in torch_geometric.nn.aggr.
+        """
         super().__init__("sum", aggr_kwargs=None, flow="source_to_target", node_dim=-2, decomposed_layers=1)
         self._W = torch.nn.Parameter(torch.empty((in_channels, out_channels)))
         torch.nn.init.xavier_uniform_(self._W)
@@ -167,6 +310,15 @@ class UniGCNIIConv(MessagePassing):
         self.beta = beta
         
     def forward(self, x: Tensor, hyperedge_index: Tensor):
+        """
+        Forward pass of UniGCNII convolutional layer.
+        
+        :param x: Feature matrix of shape [num_nodes, num_features].
+        :type x: Tensor
+        :param hyperedge_index: The hyperedge indices of shape [2, K],
+        where the first row contains hypernode indices and the second -- hyperedge indices.
+        :type hyperedge_index: Tensor
+        """
         if len(x.shape)<2:
             x = x[:, None]
         # calculate the number of nodes and edges
@@ -194,6 +346,11 @@ class UniGCNIIConv(MessagePassing):
         return out @ weight
 
 class UniGCNII(BasicHGNN):
+    """
+    UniGCNII hypergraph model as described in:
+    UniGNN: a Unified Framework for Graph and Hypergraph Neural Networks
+    https://arxiv.org/abs/2105.00956
+    """
     supports_hyperedge_weight = False
     supports_hyperedge_attr = False
 

@@ -5,11 +5,35 @@ from torch_geometric.utils import scatter
 
 
 class HyperSAGEConv(torch_geometric.nn.conv.MessagePassing):
+    """
+    HyperSAGE convolution as described in:
+    HyperSAGE: Generalizing Inductive Representation Learning on Hypergraphs
+    https://arxiv.org/abs/2010.04558
+    """
     def __init__(self, in_channels: int, out_channels: int, p: float = 1.0):
+        """
+        Initializes HyperSAGE convolutional layer.
+        
+        :param in_channels: Number of input features.
+        :type in_channels: int
+        :param out_channels: Number of output channels.
+        :type out_channels: int
+        :param p: Power to which the features are raised during aggregation (default 1.0).
+        :type p: float
+        """
         super().__init__("sum", aggr_kwargs=None, flow="source_to_target", node_dim=-2, decomposed_layers=1)
         self.p = p
         self.lin = torch.nn.Linear(in_channels, out_channels)
     def forward(self, x: torch.Tensor, hyperedge_index: torch.Tensor):
+        """
+        Forward pass of HNHN convolutional layer.
+        
+        :param x: Feature matrix of shape [num_nodes, num_features].
+        :type x: Tensor
+        :param hyperedge_index: The hyperedge indices of shape [2, K],
+        where the first row contains hypernode indices and the second -- hyperedge indices.
+        :type hyperedge_index: Tensor
+        """
         # calculate the number of nodes and edges
         num_nodes = x.size(0)
         num_edges = 0
@@ -40,6 +64,11 @@ class HyperSAGEConv(torch_geometric.nn.conv.MessagePassing):
         return self.lin(out)
 
 class HyperSAGE(BasicHGNN):
+    """
+    HyperSAGE model as described in:
+    HyperSAGE: Generalizing Inductive Representation Learning on Hypergraphs
+    https://arxiv.org/abs/2010.04558
+    """
     supports_hyperedge_weight = False
     supports_hyperedge_attr = False
     def init_conv(self, in_channels: int, out_channels: int, p: float = 1.0):

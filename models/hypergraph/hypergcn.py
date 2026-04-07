@@ -7,11 +7,35 @@ from torch_geometric.nn.conv import MessagePassing
 from torch_geometric.utils import scatter
 
 class HyperGCNConv(MessagePassing):
+    """
+    HyperGCN convolution as described in:
+    HyperGCN: A New Method of Training Graph Convolutional Networks on Hypergraphs
+    https://arxiv.org/abs/1809.02589
+    """
     def __init__(self, in_channels: int, out_channels: int, bias: bool = False):
+        """
+        Initializes HyperGCN convolutional layer.
+        
+        :param in_channels: Number of input features.
+        :type in_channels: int
+        :param out_channels: Number of output channels.
+        :type out_channels: int
+        :param bias: Whether to use bias in the linear transformation (default False).
+        :type bias: bool
+        """
         super().__init__("sum", aggr_kwargs=None, flow="source_to_target", node_dim=-2, decomposed_layers=1)
         self.lin = torch.nn.Linear(in_channels, out_channels, bias=bias)
     
     def forward(self, x: Tensor, hyperedge_index: Tensor):
+        """
+        Forward pass of HyperGCN convolutional layer.
+        
+        :param x: Feature matrix of shape [num_nodes, num_features].
+        :type x: Tensor
+        :param hyperedge_index: The hyperedge indices of shape [2, K],
+        where the first row contains hypernode indices and the second -- hyperedge indices.
+        :type hyperedge_index: Tensor
+        """
         x = self.lin(x)
         num_nodes = x.shape[0]
         with torch.no_grad():
@@ -61,6 +85,11 @@ class HyperGCNConv(MessagePassing):
 
 
 class HyperGCN(BasicHGNN):
+    """
+    HyperGCN model as described in:
+    HyperGCN: A New Method of Training Graph Convolutional Networks on Hypergraphs
+    https://arxiv.org/abs/1809.02589
+    """
     supports_hyperedge_weight = False
     supports_hyperedge_attr = False
 

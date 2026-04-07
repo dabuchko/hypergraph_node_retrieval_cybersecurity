@@ -39,7 +39,7 @@ done
 
 python hyperparam_tuning.py "$1" --imbalance="$imbalance" --graph_based="CSP" "${@:3}"
 
-for f in "HyperGCN" "UniGCN" "UniGAT" "UniGIN" "UniSAGE" "UniGCNII" "HCHA" "AllDeepSets" "AllSetTransformer" "HNHN" "HGNN" "HyperSAGE" "MinSum"; do
+for f in "HyperGCN" "UniGCN" "UniGAT" "UniGIN" "UniSAGE" "UniGCNII" "HCHA" "AllDeepSets" "AllSetTransformer" "HNHN" "HGNN" "HyperSAGE" "SumMin"; do
     python hyperparam_tuning.py "$1" --imbalance="$imbalance" --embedding="Random Gaussian" --graph_based="$f" "${@:3}"
     python hyperparam_tuning.py "$1" --imbalance="$imbalance" --embedding="Matrix Factorization" --graph_based="$f" "${@:3}"
     python hyperparam_tuning.py "$1" --imbalance="$imbalance" --embedding="Spectral Embedding" --graph_based="$f" "${@:3}"
