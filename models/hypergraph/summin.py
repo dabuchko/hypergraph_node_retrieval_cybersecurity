@@ -52,7 +52,9 @@ class SumMin(MessagePassing):
         # calculate the number of nodes and edges
         num_nodes = x.size(0)
         num_edges = 0
-        if hyperedge_index.numel() > 0:
+        if hyperedge_weight is not None:
+            num_edges = hyperedge_weight.shape[0]
+        elif hyperedge_index.numel() > 0:
             num_edges = int(hyperedge_index[1].max()) + 1
         if hyperedge_weight!=None:
             hyperedge_weight = hyperedge_weight.reshape(-1, 1)
