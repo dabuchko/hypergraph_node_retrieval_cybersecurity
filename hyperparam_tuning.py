@@ -280,15 +280,8 @@ def main(args: argparse.ArgumentParser):
                     x = x[:data.num_nodes]
                     method_hp_set["in_channels"] = x.shape[-1]
                     method_hp_set["out_channels"] = 1
-                if args.graph_based=="HyperSAGE" or args.graph_based=="MinSum":
-                    method_hp_set_copy = method_hp_set.copy()
-                    del method_hp_set_copy["batch_size"]
-                    model = HYPERGRAPH_METHODS[args.graph_based](**method_hp_set_copy)
-                    preds = train_HGNN_batches(model, data, x, method_hp_set["batch_size"], args.num_workers, hyperedge_attr,
-                                               args.patience, args.delta, weight_true_class, device)
-                else:
-                    model = HYPERGRAPH_METHODS[args.graph_based](**method_hp_set)
-                    preds = train_HGNN(model, data, x, hyperedge_attr, args.patience, args.delta, weight_true_class, device)
+                model = HYPERGRAPH_METHODS[args.graph_based](**method_hp_set)
+                preds = train_HGNN(model, data, x, hyperedge_attr, args.patience, args.delta, weight_true_class, device)
             else:
                 raise "Unexpected set. Feature method is not set and graph/hypergraph method is unknown."
 
