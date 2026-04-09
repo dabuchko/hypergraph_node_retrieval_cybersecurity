@@ -7,6 +7,7 @@ import datetime
 import re
 import copy
 import gc
+import traceback
 from imblearn.under_sampling import RandomUnderSampler, TomekLinks
 from imblearn.over_sampling import RandomOverSampler, SMOTE
 from time import time
@@ -17,9 +18,9 @@ import numpy as np
 
 from data import *
 from models import *
-from imbalance import *
+from hypergraph_undersampling import *
 
-from train import train_GNN, train_GNN_batches, train_HGNN, train_HGNN_batches, evaluate, fit_transform_node2vec
+from train import train_GNN, train_GNN_batches, train_HGNN, evaluate, train_predict_node2vec
 
 class HyperparameterSetGenerator():
     """
@@ -36,7 +37,15 @@ class HyperparameterSetGenerator():
     more realistic maximum of number of hyperparameter combinations,
     because one million is unrealistically high even for trivial algorithms.
     """
-    def __init__(self, *hyperparameters_ranges):
+    def __init__(self, *hyperparameters_ranges: dict):
+        """
+        Initializes the HyperparameterSetGenerator with the provided hyperparameter ranges.
+        
+        :param hyperparameters_ranges: Set of dictionaries, where each dictionary corresponds
+        to the set of hyperparameters for a specific method. The keys of the dictionary are
+        hyperparameter names, values are lists of possible hyperparameter values.
+        :type hyperparameters_ranges: dict
+        """
         self._lock = threading.Lock()
         self._hyperparam_ranges = hyperparameters_ranges
         # if number of possible combinations is less than one
@@ -68,9 +77,19 @@ class HyperparameterSetGenerator():
             self._counter = 0
 
     def __iter__(self):
+        """
+        Returns the iterator over hyperparameter combinations. Terminates if end is
+        reached and the number of all possible combinations is smaller than one million,
+        otherwise samples random combinations indefinitely (may sample duplicates in this case).
+        """
         return self
 
     def __next__(self):
+        """
+        Returns the next combination of hyperparameters. Raise StopIteration exception if end is
+        reached and the number of all possible combinations is smaller than one million,
+        otherwise samples random combinations indefinitely (may sample duplicates in this case).
+        """
         with self._lock:
             if self._precomputed==None:
                 # return randomly sampled combination
@@ -87,17 +106,17 @@ class HyperparameterSetGenerator():
 
 
 def main(args: argparse.ArgumentParser):
-    # verify correct combination of methods
+    # verify correct combination of methods and learning strategies
     embedding_set = args.embedding!=None
     features_set = args.feature_based!=None
     graph_set = args.graph_based!=None
     if not ((features_set and not graph_set) or
         (not features_set and graph_set)):
         raise Exception("Only one option is available. Either provide 'feature_based' or 'graph_based' argument.")
-    if args.imbalance in ["random_oversampling", "random_undersampling", "SMOTE", "tomek_links"] and  graph_set:
-        raise Exception("Specified imbalance handling strategy is unavailable for graph methods.")
-    if args.imbalance=="weight" and (args.feature_based=="KNN" or args.graph_based=="Label Propagation" or args.graph_based=="CSP"):
-            raise Exception("'weight' imbalance sampling handling strategy is unavailable for KNN and label propagation methods.")
+    if args.train_strategy in ["random_oversampling", "random_undersampling", "SMOTE", "tomek_links"] and  graph_set:
+        raise Exception("Specified training strategy is unavailable for graph methods.")
+    if args.train_strategy=="weight" and (args.feature_based=="KNN" or args.graph_based=="Label Propagation" or args.graph_based=="CSP"):
+            raise Exception("'weight' training strategy is unavailable for KNN and label propagation methods.")
 
     # Set the random seed and the number of threads.
     if args.seed is not None:
@@ -123,16 +142,16 @@ def main(args: argparse.ArgumentParser):
     else:
         device = torch.device("cpu")
     
-    # create dataset
+    # construct dataset
     data = DATASETS[args.dataset]()
     weight_true_class = None
-    if args.imbalance=="weight":
+    if args.train_strategy=="weight":
         weight_true_class = data.y.sum().float()
         weight_true_class /= data.y.shape[0] - weight_true_class
         weight_true_class = weight_true_class
-    elif args.imbalance=="hyper_undersampling":
+    elif args.train_strategy=="hyper_undersampling":
         data = hyper_undersampling(data)
-    elif args.imbalance=="hyperedge_selection":
+    elif args.train_strategy=="hyperedge_selection":
         data = hyperedge_selection(data)
 
     # load hyperparameters ranges
@@ -161,6 +180,9 @@ def main(args: argparse.ArgumentParser):
     test_y = data.y[data.test_mask]
 
     for embedding_hp_set, method_hp_set in hp_generator:
+        # for each hyperparameter combination, generate embeddings (if needed),
+        # perform training (if needed), generate predictions and evaluate them.
+        # continue until all combinations are exhausted or time limit is reached
         try:
             print(embedding_hp_set, method_hp_set)
             local_start = time()
@@ -194,7 +216,7 @@ def main(args: argparse.ArgumentParser):
                     node2vec = EMBEDDING_METHODS[args.embedding](edge_index=embedding_graph.edge_index,
                                                                  num_nodes=embedding_graph.num_nodes,
                                                                  **embedding_hp_set_copy).to(device)
-                    x = fit_transform_node2vec(node2vec, embedding_hp_set["batch_size"], args.num_workers, device).cpu()
+                    x = train_predict_node2vec(node2vec, embedding_hp_set["batch_size"], args.num_workers, device).cpu()
                 else:
                     embedding_class = EMBEDDING_METHODS[args.embedding](**embedding_hp_set)
                     if isinstance(embedding_class, RandomGaussian):
@@ -225,22 +247,24 @@ def main(args: argparse.ArgumentParser):
             # train methods on embeddings (if any) and generate predictions 'preds'
             print("embedding done")
             if features_set:
-                x = x[:data.num_nodes].numpy()
+                # feature-based methods
+                x = x[:data.num_nodes].numpy() # use only hypernode features
                 train_x = x[data.train_mask.numpy()]
                 train_y = data.y[data.train_mask].numpy()
                 method = FEATURE_METHODS[args.feature_based](**method_hp_set)
-                if args.imbalance=="weight":
+                if args.train_strategy=="weight":
                     weights = np.ones((train_x.shape[0],), dtype=float)
                     weights[train_y==1] = weight_true_class.numpy()
                     method.fit(train_x, train_y, sample_weight=weights)
                 else:
-                    if args.imbalance=="random_oversampling":
+                    # feature based imbalance handling strategies
+                    if args.train_strategy=="random_oversampling":
                         train_x, train_y = RandomOverSampler().fit_resample(train_x, train_y)
-                    elif args.imbalance=="random_undersampling":
+                    elif args.train_strategy=="random_undersampling":
                         train_x, train_y = RandomUnderSampler().fit_resample(train_x, train_y)
-                    elif args.imbalance=="SMOTE":
+                    elif args.train_strategy=="SMOTE":
                         train_x, train_y = SMOTE().fit_resample(train_x, train_y)
-                    elif args.imbalance=="tomek_links":
+                    elif args.train_strategy=="tomek_links":
                         train_x, train_y = TomekLinks().fit_resample(train_x, train_y)
                     method.fit(train_x, train_y)
                 preds = torch.tensor(method.predict_proba(x))[:, 1]
@@ -253,6 +277,7 @@ def main(args: argparse.ArgumentParser):
             elif args.graph_based=="CSP":
                 preds = HYPERGRAPH_METHODS[args.graph_based](**method_hp_set)(x.to(device), data.hyperedge_index.to(device)).reshape(-1)
             elif args.graph_based in GRAPH_METHODS:
+                # graph based methods
                 if x!=None:
                     if args.graph_repr_GNN=="incidence":
                         if x.shape[0]!=data.num_nodes + data.num_edges:
@@ -273,6 +298,7 @@ def main(args: argparse.ArgumentParser):
                     model = GRAPH_METHODS[args.graph_based](**method_hp_set)
                     preds = train_GNN(model, graph, args.patience, args.delta, weight_true_class, device)
             elif args.graph_based in HYPERGRAPH_METHODS:
+                # hypergraph based methods
                 hyperedge_attr = None
                 if x!=None:
                     if x.shape[0]>data.num_nodes:
@@ -310,7 +336,6 @@ def main(args: argparse.ArgumentParser):
                     os.remove(args.logdir+"/preds.pt")
                 torch.save(preds, args.logdir+"/preds.pt")
         except Exception as e:
-            import traceback
             traceback.print_exc()
             print(f"Exception {e.__class__} occured with hyperparameters: {embedding_hp_set} {method_hp_set}")
             if "model" in locals():
@@ -351,10 +376,10 @@ if __name__ == '__main__':
     parser.add_argument("--logdir", type=str, default="logs", help="Default directory for storing logs.")
     parser.add_argument("--time_limit", type=int, default=6000,
                         help="Maximum time in seconds to spend on hyperparameter tuning.")
-    parser.add_argument("--imbalance", type=str, default="none", choices=["none", "weight", \
+    parser.add_argument("--train_strategy", type=str, default="none", choices=["none", "weight", \
         "random_oversampling", "random_undersampling", "SMOTE", "tomek_links",
         "hyper_undersampling", "hyperedge_selection"], \
-        help="Strategies to handle imbalance.")
+        help="Strategies to improve training process.")
     args = parser.parse_args([] if "__file__" not in globals() else None)
     if args.hyperparam_ranges=="":
         args.hyperparam_ranges = f"hyperparam_ranges_{args.dataset}.json"
