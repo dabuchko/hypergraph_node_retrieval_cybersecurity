@@ -10,7 +10,6 @@ train_strategy=${2:-none}
 # Feature based
 
 for f in "Logistic Regression" "MLP" "Naive Bayes" "KNN"; do
-    python hyperparam_tuning.py "$1" --train_strategy="$train_strategy" --embedding="Random Gaussian" --feature_based="$f" "${@:3}"
     python hyperparam_tuning.py "$1" --train_strategy="$train_strategy" --embedding="Matrix Factorization" --feature_based="$f" "${@:3}"
     python hyperparam_tuning.py "$1" --train_strategy="$train_strategy" --embedding="Spectral Embedding" --feature_based="$f" "${@:3}"
     python hyperparam_tuning.py "$1" --train_strategy="$train_strategy" --embedding="Spectral Embedding" --feature_based="$f" --graph_repr_embedding=clique "${@:3}"
