@@ -24,7 +24,7 @@ class SumMinConv(MessagePassing):
         self.relu = torch.nn.ReLU(inplace=True)
         self.lin = torch.nn.Linear(in_channels, out_channels)
         
-    def forward(self, x: Tensor, hyperedge_index: Tensor, hyperedge_weight: Tensor = None):
+    def forward(self, x: Tensor, hyperedge_index: Tensor):
         """
         Forward pass of MinSum convolutional layer.
         
@@ -43,16 +43,12 @@ class SumMinConv(MessagePassing):
         # calculate the number of nodes and edges
         num_nodes = x.size(0)
         num_edges = 0
-        if hyperedge_weight is not None:
-            num_edges = hyperedge_weight.shape[0]
-        elif hyperedge_index.numel() > 0:
+        if hyperedge_index.numel() > 0:
             num_edges = int(hyperedge_index[1].max()) + 1
 
         out = self.hyperedge_aggr(x, hyperedge_index, (num_nodes, num_edges))
         out = self.bn(out)
         out = self.relu(out)
-        if hyperedge_weight is not None:
-            out = out / (hyperedge_weight.reshape(-1, 1) / (hyperedge_weight.mean()+1e-9) + 1e-9)
         out = self.propagate(hyperedge_index.flip([0]), x=out, size=(num_edges, num_nodes))
         out.add_(x)
         return self.lin(out)
@@ -61,11 +57,12 @@ class SumMin(BasicHGNN):
     """
     SumMin hypergraph model.
     """
-    supports_hyperedge_weight = True
+    supports_hyperedge_weight = False
     supports_hyperedge_attr = False
 
-    def __init__(self, in_channels: int, hidden_channels: int, num_layers: int, out_channels: int = None,
-                 dropout: float = 0.0, **kwargs):
+    def __init__(self, in_channels: int, hidden_channels: int, num_layers: int,
+                 out_channels: int = None, dropout: float = 0.0, num_nodes: int = None,
+                 **kwargs):
         """
         Initializes the SumMin model.
         
@@ -79,31 +76,34 @@ class SumMin(BasicHGNN):
         :type out_channels: int
         :param dropout: The dropout rate that is applied between convolutional layers. (default: 0.0)
         :type dropout: float
+        :param num_nodes: The number of hypernodes in the hypergraph. If not provided,
+        deduced from hyperedge_index at the first forward pass. (default: None)
+        :type num_nodes: int
         :param kwargs: The remaining parameters to be passed to the parent BasicHGNN class.
         """
-        super().__init__(hidden_channels, hidden_channels, num_layers, out_channels, dropout, None, **kwargs)
-        self.mlp = torch.nn.Sequential(
-            torch.nn.Linear(in_channels, hidden_channels),
-            torch.nn.Tanh()
-        )
-    def forward(self, x: Tensor, hyperedge_index: Tensor, hyperedge_weight: Tensor = None):
+        super().__init__(in_channels, hidden_channels, num_layers, out_channels, dropout, None, **kwargs)
+        if num_nodes is not None:
+            self.x = torch.nn.Parameter(torch.empty((num_nodes, in_channels)))
+            torch.nn.init.xavier_uniform_(self.x)
+        else:
+            self.x = None
+    def forward(self, _: Tensor = None, hyperedge_index: Tensor = None):
         """
         Forward pass of MinSum model.
         
-        :param x: Feature matrix of shape [num_nodes, num_features].
+        :param x: This parameter is ignored by the model and kept only for consistency
+        with parent.
         :type x: Tensor
         :param hyperedge_index: The hyperedge indices of shape [2, K],
         where the first row contains hypernode indices and the second -- hyperedge indices.
         :type hyperedge_index: Tensor
-        :param hyperedge_weight: The hyperedge weights of shape [num_edges],
-        where num_edges stands for the number of hyperedges in the hypergraph.
-        None if no hyperedge weights are provided. (default: None)
-        :type hyperedge_weight: Tensor
         """
-        if len(x.shape)<2:
-            x = x[:, None]
-        x = self.mlp(x)
-        return super().forward(x, hyperedge_index, hyperedge_weight)
+        if hyperedge_index is None:
+            raise Exception("'hyperedge_index' argument cannot be None.")
+        if self.x is None:
+            self.x = torch.nn.Parameter(torch.empty((hyperedge_index[0].max().item() + 1, self.in_channels)))
+            torch.nn.init.xavier_uniform_(self.x)
+        return super().forward(self.x, hyperedge_index)
 
     def init_conv(self, in_channels: int, out_channels: int):
         return SumMinConv(in_channels, out_channels)
