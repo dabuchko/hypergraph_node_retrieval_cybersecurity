@@ -37,8 +37,9 @@ done
 # Hypergraph based
 
 python hyperparam_tuning.py "$1" --train_strategy="$train_strategy" --graph_based="CSP" "${@:3}"
+python hyperparam_tuning.py "$1" --train_strategy="$train_strategy" --graph_based="SumMin" "${@:3}"
 
-for f in "HyperGCN" "UniGCN" "UniGAT" "UniGIN" "UniSAGE" "UniGCNII" "HCHA" "AllDeepSets" "AllSetTransformer" "HNHN" "HGNN" "HyperSAGE" "SumMin"; do
+for f in "HyperGCN" "UniGCN" "UniGAT" "UniGIN" "UniSAGE" "UniGCNII" "HCHA" "AllDeepSets" "AllSetTransformer" "HNHN" "HGNN" "HyperSAGE"; do
     python hyperparam_tuning.py "$1" --train_strategy="$train_strategy" --embedding="Random Gaussian" --graph_based="$f" "${@:3}"
     python hyperparam_tuning.py "$1" --train_strategy="$train_strategy" --embedding="Matrix Factorization" --graph_based="$f" "${@:3}"
     python hyperparam_tuning.py "$1" --train_strategy="$train_strategy" --embedding="Spectral Embedding" --graph_based="$f" "${@:3}"
