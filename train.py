@@ -6,6 +6,7 @@ from torchmetrics import AUROC, AveragePrecision
 from models import RandomGaussian
 from math import ceil
 from data.hypergraph import Hypergraph
+from itertools import chain
 
 def train_predict_node2vec(node2vec_model: Node2Vec, batch_size: int = 512, num_workers: int = 0, device="cpu") -> torch.Tensor:
     """
@@ -62,7 +63,7 @@ def validate_and_preprocess_graph(graph: torch_geometric.data.Data) -> torch_geo
         graph.y = graph.y.reshape(-1, 1)
     return graph
 
-def train_GNN(model: torch.nn.Module, graph: torch_geometric.data.Data,
+def train_GNN(model: torch.nn.Module, graph: torch_geometric.data.Data, x: torch.Tensor,
               patience: int = 0, delta: float = 0.0, weight: torch.Tensor = None,
               device="cpu") -> torch.Tensor:
     """
@@ -76,6 +77,8 @@ def train_GNN(model: torch.nn.Module, graph: torch_geometric.data.Data,
     :type model: torch.nn.Module
     :param graph: Graph data.
     :type graph: torch_geometric.data.Data
+    :param x: Graph node feature matrix of shape (num_nodes, num_features).
+    :type x: torch.Tensor
     :param patience: The number of steps for which the absence of improvement
     of the validation loss by more than 'delta' is tolerated before training is stopped. (default: 0)
     :type patience: int
@@ -93,7 +96,10 @@ def train_GNN(model: torch.nn.Module, graph: torch_geometric.data.Data,
     last_loss = float("inf")
     current_patience = patience
     loss_fn = torch.nn.BCEWithLogitsLoss(weight)
-    optimizer = torch.optim.Adam(model.parameters(), 0.01)
+    parameters = model.parameters()
+    if isinstance(graph.x, torch.nn.Parameter):
+        parameters = chain(parameters, [x])
+    optimizer = torch.optim.Adam(parameters, 0.01)
 
     # verify the data format, fix existing data, and add missing data
     graph = validate_and_preprocess_graph(graph)
@@ -102,7 +108,7 @@ def train_GNN(model: torch.nn.Module, graph: torch_geometric.data.Data,
         # train
         model.train()
         optimizer.zero_grad()
-        preds = model(graph.x.to(device), graph.edge_index.to(device), edge_weight=graph.edge_weight.to(device))
+        preds = model(x.to(device), graph.edge_index.to(device), edge_weight=graph.edge_weight.to(device))
         loss = loss_fn(preds[graph.train_mask.to(device)], graph.y.to(device)[graph.train_mask.to(device)])
         loss.backward()
         optimizer.step()
@@ -120,7 +126,7 @@ def train_GNN(model: torch.nn.Module, graph: torch_geometric.data.Data,
     return preds[:, 0]
 
 def train_GNN_batches(model: torch.nn.Module, graph: torch_geometric.data.Data,
-                      num_neighbors: int = 3, patience: int = 0,
+                      x: torch.Tensor, num_neighbors: int = 3, patience: int = 0,
                       delta: float = 0.0, batch_size: int = 512, num_workers: int = 0,
                       weight: torch.Tensor = None, device="cpu") -> torch.Tensor:
     """
@@ -137,6 +143,8 @@ def train_GNN_batches(model: torch.nn.Module, graph: torch_geometric.data.Data,
     :type model: torch.nn.Module
     :param graph: Graph data.
     :type graph: torch_geometric.data.Data
+    :param x: Graph node feature matrix of shape (num_nodes, num_features).
+    :type x: torch.Tensor
     :param num_neighbors: The number of neighbors to sample for each node in batch
     in each iteration. If an entry is set to -1, all neighbors will be included.
     :type num_neighbors: int
@@ -161,7 +169,10 @@ def train_GNN_batches(model: torch.nn.Module, graph: torch_geometric.data.Data,
     last_loss = float("inf")
     current_patience = patience
     loss_fn = torch.nn.BCEWithLogitsLoss(weight)
-    optimizer = torch.optim.Adam(model.parameters(), 0.005)
+    parameters = model.parameters()
+    if isinstance(x, torch.nn.Parameter):
+        parameters = chain(parameters, [x])
+    optimizer = torch.optim.Adam(parameters, 0.005)
 
     # verify the data format, fix existing data, and add missing data
     graph = validate_and_preprocess_graph(graph)
@@ -176,7 +187,7 @@ def train_GNN_batches(model: torch.nn.Module, graph: torch_geometric.data.Data,
             batch_graph = batch_graph.to(device)
             optimizer.zero_grad()
             batch_edge_weight = graph.edge_weight[batch_graph.e_id.to(graph.edge_weight.device)].to(device)
-            batch_preds = model(batch_graph.x, batch_graph.edge_label_index, edge_weight=batch_edge_weight)
+            batch_preds = model(x[batch_graph.n_id.cpu()].to(device), batch_graph.edge_label_index, edge_weight=batch_edge_weight)
             loss = loss_fn(batch_preds[batch_graph.train_mask], batch_graph.y[batch_graph.train_mask])
             loss.backward()
             optimizer.step()
@@ -188,7 +199,7 @@ def train_GNN_batches(model: torch.nn.Module, graph: torch_geometric.data.Data,
             for batch_graph in loader:
                 batch_graph = batch_graph.to(device)
                 batch_edge_weight = graph.edge_weight[batch_graph.e_id.to(graph.edge_weight.device)].to(device)
-                batch_preds = model(batch_graph.x, batch_graph.edge_label_index, edge_weight=batch_edge_weight)
+                batch_preds = model(x[batch_graph.n_id.cpu()].to(device), batch_graph.edge_label_index, edge_weight=batch_edge_weight)
                 if batch_graph.val_mask.sum()!=0:
                     loss += loss_fn(batch_preds[batch_graph.val_mask], batch_graph.y[batch_graph.val_mask])
                 preds[batch_graph.n_id] = batch_preds
@@ -264,7 +275,10 @@ def train_HGNN(model: torch.nn.Module, hypergraph: Hypergraph, x: torch.Tensor,
     last_loss = float("inf")
     current_patience = patience
     loss_fn = torch.nn.BCEWithLogitsLoss(weight)
-    optimizer = torch.optim.Adam(model.parameters(), 0.01)
+    parameters = model.parameters()
+    if isinstance(x, torch.nn.Parameter):
+        parameters = chain(parameters, [x])
+    optimizer = torch.optim.Adam(parameters, 0.01)
 
     # verify the data format, fix existing data, and add missing data
     hypergraph = validate_and_preprocess_hypergraph(hypergraph, x)
@@ -275,12 +289,14 @@ def train_HGNN(model: torch.nn.Module, hypergraph: Hypergraph, x: torch.Tensor,
         # train
         model.train()
         optimizer.zero_grad()
-        kwargs = {}
+        kwargs = {"hyperedge_index": hypergraph.hyperedge_index.to(device)}
+        if x is not None:
+            kwargs["x"] = x.to(device)
         if model.supports_hyperedge_attr:
             kwargs["hyperedge_attr"] = hyperedge_attr.to(device)
         if model.supports_hyperedge_weight:
             kwargs["hyperedge_weight"] = hypergraph.hyperedge_weight.to(device)
-        preds = model(x.to(device), hypergraph.hyperedge_index.to(device), **kwargs)
+        preds = model(**kwargs)
         loss = loss_fn(preds[hypergraph.train_mask.to(device)], hypergraph.y.to(device)[hypergraph.train_mask.to(device)])
         loss.backward()
         optimizer.step()
@@ -308,7 +324,7 @@ class HGNN_batch_sampler(torch.utils.data.Sampler):
     should be returned by collate function, and "eval" mode is used for validation
     when val_mask is used instead.
     """
-    def __init__(self, hypergraph: Hypergraph, batch_size: int = 64, val: bool = False):
+    def __init__(self, hypergraph: Hypergraph, sample: str = None, batch_size: int = 64, val: bool = False):
         """
         Initializes the batch sampler.
         
@@ -316,11 +332,18 @@ class HGNN_batch_sampler(torch.utils.data.Sampler):
         :type hypergraph: Hypergraph
         :param batch_size: The number of incident connections to sample for each batch,
         i.e. number of pair to sample from hyperedge_index. (default: 64)
+        :param sample: Specifies the sampling strategy to use. If None the hypernode-hyperedge
+        pairs are sampled in random order. If 'hypernodes' is specified as sampling strategy,
+        then hypernode-hyperedge pairs with similar hypernodes will tend to be sampled together.
+        If 'hyperedges' is specified as sampling strategy, then hypernode-hyperedge pairs with similar
+        hypernodes will tend to be sampled together.
+        :type sample: str
         :type batch_size: int
         :param val: Whether the sampler is initialized in validation mode (True) or not (False). (default: False)
         :type val: bool
         """
         self.hypergraph = hypergraph
+        self.sample = sample
         self.val = val
         self.batch_size = batch_size
         self.shuffle()
@@ -330,7 +353,13 @@ class HGNN_batch_sampler(torch.utils.data.Sampler):
         Shuffles the connections in the hypergraph (pairs of hyperedge_index).
         It is recommended to be called between any two training epochs.
         """
-        self.order = torch.argsort(torch.rand((self.hypergraph.num_nodes,))[self.hypergraph.hyperedge_index[0]], stable=True).tolist()
+        if self.sample=="hypernodes":
+            order = torch.rand((self.hypergraph.num_nodes,))[self.hypergraph.hyperedge_index[0]]
+        elif self.sample=="hyperedges":
+            order = torch.rand((self.hypergraph.num_edges,))[self.hypergraph.hyperedge_index[1]]
+        else:
+            order = torch.rand((self.hypergraph.hyperedge_index.shape[1],))
+        self.order = torch.argsort(order, stable=True).tolist()
     
     def collate(self, batch_hyperedge_index: List[torch.Tensor]
                 ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
@@ -385,9 +414,9 @@ class HGNN_batch_sampler(torch.utils.data.Sampler):
         self.val = True
 
 def train_HGNN_batches(model: torch.nn.Module, hypergraph: Hypergraph, x: torch.Tensor,
-                       batch_size:list = 64, num_workers: int = 0, hyperedge_attr: torch.Tensor = None,
-                       patience: int = 0, delta: float = 0.0, weight=None,
-                       device="cpu") -> torch.Tensor:
+                       sample: str = None, batch_size:list = 64, num_workers: int = 0,
+                       hyperedge_attr: torch.Tensor = None, patience: int = 0,
+                       delta: float = 0.0, weight=None, device="cpu") -> torch.Tensor:
     """
     Trains Hypergraph Neural Network model on the provided hypergraph and returns final predictions.
     Model is trained in batches by sampling a batch from the incident list (list consisting of
@@ -404,6 +433,12 @@ def train_HGNN_batches(model: torch.nn.Module, hypergraph: Hypergraph, x: torch.
     :type hypergraph: Hypergraph
     :param x: Hypernode feature matrix of shape (num_nodes, num_features).
     :type x: torch.Tensor
+    :param sample: Specifies the sampling strategy to use. If None the hypernode-hyperedge
+    pairs are sampled in random order. If 'hypernodes' is specified as sampling strategy,
+    then hypernode-hyperedge pairs with similar hypernodes will tend to be sampled together.
+    If 'hyperedges' is specified as sampling strategy, then hypernode-hyperedge pairs with similar
+    hypernodes will tend to be sampled together.
+    :type sample: str
     :param batch_size: Batch size of subset of incident list (number of hypernode-hyperedge pairs). (default: 64)
     :type batch_size: list
     :param num_workers: Number of workers for dataloading. 0 stands for using only the main process. (default: 0)
@@ -428,7 +463,10 @@ def train_HGNN_batches(model: torch.nn.Module, hypergraph: Hypergraph, x: torch.
     last_loss = float("inf")
     current_patience = patience
     loss_fn = torch.nn.BCEWithLogitsLoss(weight)
-    optimizer = torch.optim.Adam(model.parameters(), 0.005)
+    parameters = model.parameters()
+    if isinstance(x, torch.nn.Parameter):
+        parameters = chain(parameters, [x])
+    optimizer = torch.optim.Adam(parameters, 0.005)
 
     # verify the data format, fix existing data, and add missing data
     hypergraph = validate_and_preprocess_hypergraph(hypergraph, x)
@@ -436,7 +474,7 @@ def train_HGNN_batches(model: torch.nn.Module, hypergraph: Hypergraph, x: torch.
         hyperedge_attr = RandomGaussian(x.shape[-1])(hypergraph.num_edges)
     
     # initialize dataloader
-    batch_sampler = HGNN_batch_sampler(hypergraph, batch_size)
+    batch_sampler = HGNN_batch_sampler(hypergraph, sample, batch_size)
     dataloader = torch.utils.data.DataLoader(hypergraph.hyperedge_index.T, batch_sampler=batch_sampler, num_workers=num_workers, collate_fn=batch_sampler.collate)
     
     while current_patience>=0:
@@ -447,12 +485,14 @@ def train_HGNN_batches(model: torch.nn.Module, hypergraph: Hypergraph, x: torch.
             if batch_train_mask.sum()==0:
                 continue
             optimizer.zero_grad()
-            kwargs = {}
+            kwargs = {"hyperedge_index": batch_hyperedge_index.to(device)}
+            if x is not None:
+                kwargs["x"] = x[batch_hypernodes].to(device)
             if model.supports_hyperedge_attr:
                 kwargs["hyperedge_attr"] = hyperedge_attr[batch_hyperedges].to(device)
             if model.supports_hyperedge_weight:
                 kwargs["hyperedge_weight"] = hypergraph.hyperedge_weight[batch_hyperedges].to(device)
-            batch_preds = model(x[batch_hypernodes].to(device), batch_hyperedge_index.to(device), **kwargs)
+            batch_preds = model(**kwargs)
             loss = loss_fn(batch_preds[batch_train_mask.to(device)], hypergraph.y[batch_hypernodes][batch_train_mask].to(device))
             loss.backward()
             optimizer.step()

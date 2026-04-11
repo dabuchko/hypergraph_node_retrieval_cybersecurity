@@ -22,6 +22,9 @@
         "num_negative_samples": [4, 8, 16],
         "batch_size": [1024, 2048, 4096, 8192]
     },
+    "Trainable Embeddings": {
+        "dim": [8, 16, 32]
+    },
     "Logistic Regression": {
         "C": [0.001, 0.01, 0.1, 1.0, 10, 100, 1000]
     },
@@ -171,6 +174,12 @@
         "act": [null, "tanh", "relu"]
     },
     "SumMin": {
+        "in_channels": [8, 16, 32],
+        "hidden_channels": [8, 16, 32],
+        "num_layers": [1, 2, 3, 4],
+        "dropout": [0.0, 0.2, 0.4, 0.6, 0.8]
+    },
+    "SumMinAblation": {
         "hidden_channels": [8, 16, 32],
         "num_layers": [1, 2, 3, 4],
         "dropout": [0.0, 0.2, 0.4, 0.6, 0.8]

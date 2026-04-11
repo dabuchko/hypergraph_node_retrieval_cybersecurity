@@ -86,24 +86,71 @@ class SumMin(BasicHGNN):
             self.x = torch.nn.Parameter(torch.empty((num_nodes, in_channels)))
             torch.nn.init.xavier_uniform_(self.x)
         else:
-            self.x = None
-    def forward(self, _: Tensor = None, hyperedge_index: Tensor = None):
+            self.x = torch.nn.UninitializedParameter()
+    def forward(self, hyperedge_index: Tensor):
         """
         Forward pass of MinSum model.
         
-        :param x: This parameter is ignored by the model and kept only for consistency
-        with parent.
-        :type x: Tensor
         :param hyperedge_index: The hyperedge indices of shape [2, K],
         where the first row contains hypernode indices and the second -- hyperedge indices.
         :type hyperedge_index: Tensor
         """
         if hyperedge_index is None:
             raise Exception("'hyperedge_index' argument cannot be None.")
-        if self.x is None:
-            self.x = torch.nn.Parameter(torch.empty((hyperedge_index[0].max().item() + 1, self.in_channels)))
-            torch.nn.init.xavier_uniform_(self.x)
+        if isinstance(self.x, torch.nn.UninitializedParameter):
+            self.x.materialize((hyperedge_index[0].max().item()+1, self.in_channels), device=hyperedge_index.device)
+            torch.nn.init.xavier_uniform_(self.x.data)
         return super().forward(self.x, hyperedge_index)
 
     def init_conv(self, in_channels: int, out_channels: int):
         return SumMinConv(in_channels, out_channels)
+
+
+class SumMinAblation(BasicHGNN):
+    """
+    Ablation of SumMin hypergraph model, where instead of trainable embedding
+    the external embedding is used and additional linear layer with tanh layer
+    is applied to it before SumMin convolutions.
+    """
+    supports_hyperedge_weight = False
+    supports_hyperedge_attr = False
+
+    def __init__(self, in_channels: int, hidden_channels: int, num_layers: int,
+                 out_channels: int = None, dropout: float = 0.0, **kwargs):
+        """
+        Initializes the SumMin model.
+        
+        :param in_channels: Number of input features.
+        :type in_channels: int
+        :param hidden_channels: Number of hidden channels.
+        :type hidden_channels: int
+        :param num_layers: Number of convolutional layers in the model.
+        :type num_layers: int
+        :param out_channels: Number of output channels.
+        :type out_channels: int
+        :param dropout: The dropout rate that is applied between convolutional layers. (default: 0.0)
+        :type dropout: float
+        :param kwargs: The remaining parameters to be passed to the parent BasicHGNN class.
+        """
+        super().__init__(in_channels, hidden_channels, num_layers, out_channels, dropout, None, **kwargs)
+        self.mlp = torch.nn.Sequential(
+            torch.nn.Linear(in_channels, in_channels),
+            torch.nn.Tanh(),
+            torch.nn.Linear(in_channels, in_channels)
+        )
+        
+    def forward(self, x: Tensor = None, hyperedge_index: Tensor = None):
+        """
+        Forward pass of MinSum model.
+        
+        :param x: Feature matrix of shape [num_nodes, num_features].
+        :type x: Tensor
+        :param hyperedge_index: The hyperedge indices of shape [2, K],
+        where the first row contains hypernode indices and the second -- hyperedge indices.
+        :type hyperedge_index: Tensor
+        """
+        return super().forward(self.mlp(x), hyperedge_index)
+
+    def init_conv(self, in_channels: int, out_channels: int):
+        return SumMinConv(in_channels, out_channels)
+    

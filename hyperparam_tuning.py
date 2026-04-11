@@ -20,7 +20,7 @@ from data import *
 from models import *
 from hypergraph_undersampling import *
 
-from train import train_GNN, train_GNN_batches, train_HGNN, evaluate, train_predict_node2vec
+from train import train_GNN, train_GNN_batches, train_HGNN, train_HGNN_batches, evaluate, train_predict_node2vec
 
 class HyperparameterSetGenerator():
     """
@@ -116,7 +116,11 @@ def main(args: argparse.ArgumentParser):
     if args.train_strategy in ["random_oversampling", "random_undersampling", "SMOTE", "tomek_links"] and  graph_set:
         raise Exception("Specified training strategy is unavailable for graph methods.")
     if args.train_strategy=="weight" and (args.feature_based=="KNN" or args.graph_based=="Label Propagation" or args.graph_based=="CSP"):
-            raise Exception("'weight' training strategy is unavailable for KNN and label propagation methods.")
+        raise Exception("'weight' training strategy is unavailable for KNN and label propagation methods.")
+    if args.embedding=="Trainable Embeddings" and features_set:
+        raise Exception("'Trainable Embeddings' cannot be used with feature-based methods.")
+    if args.embedding=="Trainable Embeddings" and (args.graph_based=="Label Propagation" or args.graph_based=="CSP"):
+        raise Exception("'Trainable Embeddings' cannot be used with label propagation methods.")
 
     # Set the random seed and the number of threads.
     if args.seed is not None:
@@ -217,6 +221,9 @@ def main(args: argparse.ArgumentParser):
                                                                  num_nodes=embedding_graph.num_nodes,
                                                                  **embedding_hp_set_copy).to(device)
                     x = train_predict_node2vec(node2vec, embedding_hp_set["batch_size"], args.num_workers, device).cpu()
+                elif args.embedding=="Trainable Embeddings":
+                    x = torch.nn.Parameter(torch.empty((data.num_nodes, embedding_hp_set["dim"])), requires_grad=True)
+                    torch.nn.init.xavier_uniform_(x.data)
                 else:
                     embedding_class = EMBEDDING_METHODS[args.embedding](**embedding_hp_set)
                     if isinstance(embedding_class, RandomGaussian):
@@ -245,7 +252,6 @@ def main(args: argparse.ArgumentParser):
             
             embedding_end = time()
             # train methods on embeddings (if any) and generate predictions 'preds'
-            print("embedding done")
             if features_set:
                 # feature-based methods
                 x = x[:data.num_nodes].numpy() # use only hypernode features
@@ -278,36 +284,45 @@ def main(args: argparse.ArgumentParser):
                 preds = HYPERGRAPH_METHODS[args.graph_based](**method_hp_set)(x.to(device), data.hyperedge_index.to(device)).reshape(-1)
             elif args.graph_based in GRAPH_METHODS:
                 # graph based methods
-                if x!=None:
+                if x is not None:
                     if args.graph_repr_GNN=="incidence":
                         if x.shape[0]!=data.num_nodes + data.num_edges:
-                            x = torch.cat([x, torch.zeros((data.num_nodes + data.num_edges - x.shape[0], x.shape[1]))], 0)
-                        graph.x = x
+                            x.data = torch.cat([x.data, torch.zeros((data.num_nodes + data.num_edges - x.shape[0], x.shape[1]))], 0)
                     else:
-                        graph.x = x[:data.num_nodes]
-                    method_hp_set["in_channels"] = graph.x.shape[-1]
-                    method_hp_set["out_channels"] = 1
-                if args.graph_based=="GraphSAGE":
+                        x.data = x.data[:data.num_nodes]
+                    method_hp_set["in_channels"] = x.shape[-1]
+                method_hp_set["out_channels"] = 1
+                if "batch_size" in method_hp_set.keys():
                     method_hp_set_copy = method_hp_set.copy()
                     del method_hp_set_copy["num_neighbors"]
                     del method_hp_set_copy["batch_size"]
                     model = GRAPH_METHODS[args.graph_based](**method_hp_set_copy)
-                    preds = train_GNN_batches(model, graph, method_hp_set["num_neighbors"], args.patience,
+                    preds = train_GNN_batches(model, graph, x, method_hp_set["num_neighbors"], args.patience,
                                         args.delta, method_hp_set["batch_size"], args.num_workers, weight_true_class, device)
                 else:
                     model = GRAPH_METHODS[args.graph_based](**method_hp_set)
-                    preds = train_GNN(model, graph, args.patience, args.delta, weight_true_class, device)
+                    preds = train_GNN(model, graph, x, args.patience, args.delta, weight_true_class, device)
             elif args.graph_based in HYPERGRAPH_METHODS:
                 # hypergraph based methods
                 hyperedge_attr = None
-                if x!=None:
+                if x is not None:
                     if x.shape[0]>data.num_nodes:
                         hyperedge_attr = x[data.num_nodes:]
-                    x = x[:data.num_nodes]
+                    x.data = x.data[:data.num_nodes]
                     method_hp_set["in_channels"] = x.shape[-1]
-                    method_hp_set["out_channels"] = 1
-                model = HYPERGRAPH_METHODS[args.graph_based](**method_hp_set)
-                preds = train_HGNN(model, data, x, hyperedge_attr, args.patience, args.delta, weight_true_class, device)
+                method_hp_set["out_channels"] = 1
+                if "batch_size" in method_hp_set.keys():
+                    method_hp_set_copy = method_hp_set.copy()
+                    del method_hp_set_copy["batch_size"]
+                    del method_hp_set_copy["sample"]
+                    model = HYPERGRAPH_METHODS[args.graph_based](**method_hp_set_copy)
+                    preds = train_HGNN_batches(model, data, x, method_hp_set["sample"],
+                                               method_hp_set["batch_size"], args.num_workers,
+                                               hyperedge_attr, args.patience, args.delta,
+                                               weight_true_class, device)
+                else:
+                    model = HYPERGRAPH_METHODS[args.graph_based](**method_hp_set)
+                    preds = train_HGNN(model, data, x, hyperedge_attr, args.patience, args.delta, weight_true_class, device)
             else:
                 raise "Unexpected set. Feature method is not set and graph/hypergraph method is unknown."
 
