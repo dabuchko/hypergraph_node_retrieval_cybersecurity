@@ -222,8 +222,7 @@ def main(args: argparse.ArgumentParser):
                                                                  **embedding_hp_set_copy).to(device)
                     x = train_predict_node2vec(node2vec, embedding_hp_set["batch_size"], args.num_workers, device).cpu()
                 elif args.embedding=="Trainable Embeddings":
-                    x = torch.nn.Parameter(torch.empty((data.num_nodes, embedding_hp_set["dim"])), requires_grad=True)
-                    torch.nn.init.xavier_uniform_(x.data)
+                    x = EMBEDDING_METHODS[args.embedding](data.num_nodes, embedding_hp_set["dim"])
                 else:
                     embedding_class = EMBEDDING_METHODS[args.embedding](**embedding_hp_set)
                     if isinstance(embedding_class, RandomGaussian):
