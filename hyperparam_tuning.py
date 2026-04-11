@@ -309,6 +309,8 @@ def main(args: argparse.ArgumentParser):
                         hyperedge_attr = x[data.num_nodes:]
                     x.data = x.data[:data.num_nodes]
                     method_hp_set["in_channels"] = x.shape[-1]
+                if args.graph_based=="SumMin":
+                    method_hp_set["num_nodes"] = data.num_nodes
                 method_hp_set["out_channels"] = 1
                 if "batch_size" in method_hp_set.keys():
                     method_hp_set_copy = method_hp_set.copy()
