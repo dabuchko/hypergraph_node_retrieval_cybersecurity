@@ -159,3 +159,10 @@ call in script:
 ```
 ./hp_tuning_run.sh <DATASET> <TRAIN_STRATEGY> <ADDITIONAL_ARGUMENTS>
 ```
+
+To run hyperparameter tuning for ablations of the methods use another script,
+where command arguments have the same meaning as above:
+
+```
+./hp_tuning_abl_run.sh <DATASET> <TRAIN_STRATEGY> <ADDITIONAL_ARGUMENTS>
+```
