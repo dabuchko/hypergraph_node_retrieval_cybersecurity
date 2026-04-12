@@ -186,7 +186,7 @@ def train_GNN_batches(model: torch.nn.Module, graph: torch_geometric.data.Data,
                 continue
             batch_graph = batch_graph.to(device)
             optimizer.zero_grad()
-            batch_edge_weight = graph.edge_weight[batch_graph.e_id.to(graph.edge_weight.device)].to(device)
+            batch_edge_weight = graph.edge_weight[batch_graph.input_id.to(graph.edge_weight.device)].to(device)
             batch_preds = model(x[batch_graph.n_id.cpu()].to(device), batch_graph.edge_label_index, edge_weight=batch_edge_weight)
             loss = loss_fn(batch_preds[batch_graph.train_mask], batch_graph.y[batch_graph.train_mask])
             loss.backward()
@@ -198,7 +198,7 @@ def train_GNN_batches(model: torch.nn.Module, graph: torch_geometric.data.Data,
             preds = torch.zeros_like(graph.y, device=device)
             for batch_graph in loader:
                 batch_graph = batch_graph.to(device)
-                batch_edge_weight = graph.edge_weight[batch_graph.e_id.to(graph.edge_weight.device)].to(device)
+                batch_edge_weight = graph.edge_weight[batch_graph.input_id.to(graph.edge_weight.device)].to(device)
                 batch_preds = model(x[batch_graph.n_id.cpu()].to(device), batch_graph.edge_label_index, edge_weight=batch_edge_weight)
                 if batch_graph.val_mask.sum()!=0:
                     loss += loss_fn(batch_preds[batch_graph.val_mask], batch_graph.y[batch_graph.val_mask])
