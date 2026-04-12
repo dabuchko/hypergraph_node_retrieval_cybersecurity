@@ -1,0 +1,167 @@
+{
+    "Random Gaussian": {
+        "mean": [0],
+        "std": [1],
+        "dim": [8, 16, 32]
+    },
+    "Trainable Embeddings": {
+        "dim": [8, 16, 32]
+    },
+    "GCN": {
+        "hidden_channels": [8, 16, 32],
+        "num_layers": [1, 2, 3, 4],
+        "dropout": [0.0, 0.2, 0.4, 0.6, 0.8],
+        "num_neighbors": [16, 32],
+        "batch_size": [8388608, 16777216, 33554432]
+    },
+    "GAT": {
+        "hidden_channels": [8, 16, 32],
+        "num_layers": [1, 2, 3, 4],
+        "dropout": [0.0, 0.2, 0.4, 0.6, 0.8],
+        "heads": [1, 2, 4, 8],
+        "add_self_loops": [false, true],
+        "num_neighbors": [16, 32],
+        "batch_size": [8388608, 16777216, 33554432]
+    },
+    "GIN": {
+        "hidden_channels": [8, 16, 32],
+        "num_layers": [1, 2, 3, 4],
+        "dropout": [0.0, 0.2, 0.4, 0.6, 0.8],
+        "num_neighbors": [16, 32],
+        "batch_size": [8388608, 16777216, 33554432]
+    },
+    "GraphSAGE": {
+        "hidden_channels": [8, 16, 32],
+        "num_layers": [1, 2, 3, 4],
+        "dropout": [0.0, 0.2, 0.4, 0.6, 0.8],
+        "aggr": ["mean", "max"],
+        "num_neighbors": [16, 32],
+        "batch_size": [8388608, 16777216, 33554432]
+    },
+    "Label Propagation": {
+        "num_layers": [1, 2, 3, 4, 5, 6, 7, 8],
+        "alpha": [0.2, 0.4, 0.6, 0.8, 1.0]
+    },
+    "CSP": {
+        "num_layers": [1, 2, 3, 4, 5, 6, 7, 8]
+    },
+    "HGNN": {
+        "hidden_channels": [8, 16, 32],
+        "num_layers": [1, 2, 3, 4],
+        "dropout": [0.0, 0.2, 0.4, 0.6, 0.8],
+        "bias": [false, true],
+        "act": [null, "tanh", "relu"],
+        "sample": [null, "hypernodes", "hyperedges"],
+        "batch_size": [8388608, 16777216, 33554432]
+    },
+    "HCHA": {
+        "num_layers": [1, 2, 3, 4],
+        "heads": [1, 2, 4, 8],
+        "dropout": [0.0, 0.2, 0.4, 0.6, 0.8],
+        "bias": [false, true],
+        "act": [null, "tanh", "relu"],
+        "sample": [null, "hypernodes", "hyperedges"],
+        "batch_size": [8388608, 16777216, 33554432]
+    },
+    "UniGCN": {
+        "hidden_channels": [8, 16, 32],
+        "num_layers": [1, 2],
+        "dropout": [0.0, 0.2, 0.4, 0.6, 0.8],
+        "hyperedge_aggr": ["sum", "mean"],
+        "bias": [false, true],
+        "act": [null, "tanh", "relu"],
+        "sample": [null, "hypernodes", "hyperedges"],
+        "batch_size": [8388608, 16777216, 33554432]
+    },
+    "UniGAT": {
+        "hidden_channels": [8, 16, 32],
+        "num_layers": [1, 2],
+        "dropout": [0.0, 0.2, 0.4, 0.6, 0.8],
+        "hyperedge_aggr": ["sum", "mean"],
+        "bias": [false, true],
+        "act": [null, "tanh", "relu"],
+        "sample": [null, "hypernodes", "hyperedges"],
+        "batch_size": [8388608, 16777216, 33554432]
+    },
+    "UniGIN": {
+        "hidden_channels": [8, 16, 32],
+        "num_layers": [1, 2],
+        "dropout": [0.0, 0.2, 0.4, 0.6, 0.8],
+        "hyperedge_aggr": ["sum", "mean"],
+        "bias": [false, true],
+        "act": [null, "tanh", "relu"],
+        "sample": [null, "hypernodes", "hyperedges"],
+        "batch_size": [8388608, 16777216, 33554432]
+    },
+    "UniSAGE": {
+        "hidden_channels": [8, 16, 32],
+        "num_layers": [1, 2],
+        "dropout": [0.0, 0.2, 0.4, 0.6, 0.8],
+        "sage_aggr": ["max", "mean"],
+        "hyperedge_aggr": ["sum", "mean"],
+        "bias": [false, true],
+        "act": [null, "tanh", "relu"],
+        "sample": ["hypernodes"],
+        "batch_size": [8388608, 16777216, 33554432]
+    },
+    "UniGCNII": {
+        "hidden_channels": [8, 16, 32],
+        "alpha": [0.0, 0.25, 0.5, 0.75, 1.0],
+        "beta": [0.0, 0.25, 0.5, 0.75, 1.0],
+        "num_layers": [1, 2],
+        "dropout": [0.0, 0.2, 0.4, 0.6, 0.8],
+        "hyperedge_aggr": ["sum", "mean"],
+        "bias": [false, true],
+        "act": [null, "tanh", "relu"],
+        "sample": [null, "hypernodes", "hyperedges"],
+        "batch_size": [8388608, 16777216, 33554432]
+    },
+    "AllDeepSets": {
+        "hidden_channels": [8, 16, 32],
+        "num_layers": [1, 2, 3, 4],
+        "dropout": [0.0, 0.2, 0.4, 0.6, 0.8],
+        "classifier_hidden": [8, 16, 32],
+        "classifier_num_layers": [1, 2, 3, 4],
+        "normalization": ["ln", "bn", "None"],
+        "deepset_input_norm": [false, true],
+        "GPR": [false, true],
+        "sample": [null, "hypernodes", "hyperedges"],
+        "batch_size": [8388608, 16777216, 33554432]
+    },
+    "HNHN": {
+        "hidden_channels": [8, 16, 32],
+        "num_layers": [1, 2, 3, 4],
+        "dropout": [0.0, 0.2, 0.4, 0.6, 0.8],
+        "heads": [1, 2, 4, 8],
+        "nonlinear_inbetween": [false, true],
+        "alpha": [0.0, 0.5, 1.0, 2.0],
+        "beta": [0.0, 0.5, 1.0, 2.0],
+        "act": [null, "tanh", "relu"],
+        "sample": [null, "hypernodes", "hyperedges"],
+        "batch_size": [8388608, 16777216, 33554432]
+    },
+    "HyperSAGE": {
+        "hidden_channels": [8, 16, 32],
+        "p": [-1, 0.01, 0.5, 1.0, 2.0],
+        "num_layers": [1, 2, 3, 4],
+        "dropout": [0.0, 0.2, 0.4, 0.6, 0.8],
+        "act": [null, "tanh", "relu"],
+        "sample": ["hypernodes"],
+        "batch_size": [8388608, 16777216, 33554432]
+    },
+    "SumMin": {
+        "in_channels": [8, 16, 32],
+        "hidden_channels": [8, 16, 32],
+        "num_layers": [1, 2, 3, 4],
+        "dropout": [0.0, 0.2, 0.4, 0.6, 0.8],
+        "sample": ["hyperedges"],
+        "batch_size": [8388608, 16777216, 33554432]
+    },
+    "SumMinAblation": {
+        "hidden_channels": [8, 16, 32],
+        "num_layers": [1, 2, 3, 4],
+        "dropout": [0.0, 0.2, 0.4, 0.6, 0.8],
+        "sample": ["hyperedges"],
+        "batch_size": [8388608, 16777216, 33554432]
+    }
+}
