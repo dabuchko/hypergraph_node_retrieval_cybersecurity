@@ -88,7 +88,22 @@ pip install -r requirements.txt
 
 ## Dataset analysis
 
-All datasets used during the experiments are analyzed for different metrics: ...
+All datasets used during the experiments are analyzed for different metrics: 
+
+* Number of hypernodes
+* Number of hyperedges
+* Number of incident connections
+* Number of malicious and benign nodes
+* Number of empty hyperedges
+* Number of simple hyperedges (where hyperedge degree is 1)
+* Number of isolated nodes
+* Hypernode degree statistics (mean, median, standard deviation, minimum, maximum)
+* Hyperedge degree statistics (mean, median, standard deviation, minimum, maximum)
+* Hyperedge weight statistics (mean, median, standard deviation, minimum, maximum)
+* Hypergraph density - fraction of incidence connections from the maximum
+possible number of connections
+* Number of connected components
+* Statistics on the number of hypernodes in connected component (mean, median, standard deviation, minimum, maximum)
 
 Statistics of the dataset can be analyzed by using the following command, where
 `<DATASET>` should be replaced by the actual dataset name:
