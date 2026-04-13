@@ -87,20 +87,28 @@ class SumMin(BasicHGNN):
             torch.nn.init.xavier_uniform_(self.x)
         else:
             self.x = torch.nn.UninitializedParameter()
-    def forward(self, hyperedge_index: Tensor):
+    def forward(self, hyperedge_index: Tensor, batch_hypernodes: Tensor = None):
         """
         Forward pass of MinSum model.
         
         :param hyperedge_index: The hyperedge indices of shape [2, K],
         where the first row contains hypernode indices and the second -- hyperedge indices.
         :type hyperedge_index: Tensor
+        :param batch_hypernodes: This parameter should be used during training with mini-batches.
+        It is a tensor of size (N, ), where position i has value j if jth feature vector
+        should be used in the current forward pass under index i.
+        :type batch_hypernodes: Tensor
         """
         if hyperedge_index is None:
             raise Exception("'hyperedge_index' argument cannot be None.")
         if isinstance(self.x, torch.nn.UninitializedParameter):
             self.x.materialize((hyperedge_index[0].max().item()+1, self.in_channels), device=hyperedge_index.device)
             torch.nn.init.xavier_uniform_(self.x.data)
-        return super().forward(self.x, hyperedge_index)
+        if batch_hypernodes is None:
+            x = self.x
+        else:
+            x = self.x[batch_hypernodes]
+        return super().forward(x, hyperedge_index)
 
     def init_conv(self, in_channels: int, out_channels: int):
         return SumMinConv(in_channels, out_channels)
