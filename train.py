@@ -371,7 +371,14 @@ class HGNN_batch_sampler(torch.utils.data.Sampler):
         :param batch_hyperedge_index: List of tensors of shape (2,) containing hypernode and hyperedge
         indexes, s.t. hypernode is incident to this hyperedge.
         :type batch_hyperedge_index: List[torch.Tensor]
-        :return: Description
+        :return: Tuple with 4 entries: tensor of shape (N,) containing hypernode
+        indexes that are used in this batch, tensor of shape (E,) containing
+        hyperedge indexes that are used in this batch, subset of hyperedge_index
+        used for the current batch reindexed such that the new index of hypernodes
+        and hyperedges would correspond to their corresponding position in
+        two previous tensors, mask (train or validation depending on self.val)
+        restricted to the values that correspond to the hypernodes from the
+        first tensor.
         :rtype: Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]
         """
         batch_hyperedge_index = torch.stack(batch_hyperedge_index).T
