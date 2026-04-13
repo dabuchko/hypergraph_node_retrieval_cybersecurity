@@ -225,7 +225,7 @@ def main(args: argparse.ArgumentParser):
                     x = EMBEDDING_METHODS[args.embedding](data.num_nodes, embedding_hp_set["dim"])
                 else:
                     embedding_class = EMBEDDING_METHODS[args.embedding](**embedding_hp_set)
-                    if isinstance(embedding_class, RandomGaussian):
+                    if isinstance(embedding_class, RandomGaussian) or isinstance(embedding_class, XavierUniform):
                         x = embedding_class(data.num_nodes)
                     elif isinstance(embedding_class, MatrixFactorization):
                         hyperedge_weight = None

@@ -4,6 +4,7 @@ Models module containing implementations of embedding, feature-based, graph-base
 
 from torch_geometric.nn.models import GCN, GIN, GAT, GraphSAGE, Node2Vec, LabelPropagation
 from .embedding.random_gaussian import RandomGaussian
+from .embedding.random_uniform import XavierUniform
 from .embedding.trainable_embeddings_wrapper import trainable_embeddings_wrapper
 from .embedding.matrix_factorization import MatrixFactorization
 from .embedding.spectral_embedding import SpectralEmbedding, SpectralEmbeddingUnnormalized, SpectralEmbeddingSideNorm, SpectralEmbeddingNorm
@@ -26,14 +27,16 @@ __all__ = ["EMBEDDING_METHODS", "FEATURE_METHODS", "HYPERGRAPH_METHODS", "GRAPH_
            "SpectralEmbeddingNorm", "Node2Vec", "LogisticRegression", "MLPClassifier", "GaussianNB",
            "KNeighborsClassifier", "HyperGCN", "UniGCN", "UniGAT", "UniGIN", "UniSAGE", "UniGCNII",
            "HCHA", "AllDeepSets", "AllSetTransformer", "HNHN", "HGNN", "CSP", "GCN", "GIN", "GAT",
-           "GraphSAGE", "LabelPropagation", "HyperSAGE", "SumMin", "SumMinAblation", "trainable_embeddings_wrapper"]
+           "GraphSAGE", "LabelPropagation", "HyperSAGE", "SumMin", "SumMinAblation", "trainable_embeddings_wrapper",
+           "XavierUniform"]
 
 """Dictionary mapping embedding methods' names to their corresponding classes."""
 EMBEDDING_METHODS = {"Random Gaussian": RandomGaussian, "Trainable Embeddings": trainable_embeddings_wrapper,
                      "Matrix Factorization": MatrixFactorization, "Spectral Embedding": SpectralEmbedding,
                      "Spectral Embedding Unnormalized": SpectralEmbeddingUnnormalized,
                      "Spectral Embedding Side Normalized": SpectralEmbeddingSideNorm,
-                     "Spectral Embedding Normalized": SpectralEmbeddingNorm, "Node2Vec": Node2Vec}
+                     "Spectral Embedding Normalized": SpectralEmbeddingNorm, "Node2Vec": Node2Vec,
+                     "Xavier Uniform": XavierUniform}
 
 """Dictionary mapping feature methods' names to their corresponding classes."""
 FEATURE_METHODS = {"Logistic Regression": LogisticRegression, "MLP": MLPClassifier,
