@@ -51,7 +51,7 @@
         "dropout": [0.0, 0.2, 0.4, 0.6, 0.8],
         "bias": [false, true],
         "act": [null, "tanh", "relu"],
-        "sample": [null, "hypernodes", "hyperedges"],
+        "sample": ["hypernodes", "hyperedges"],
         "batch_size": [8388608, 16777216, 33554432]
     },
     "HCHA": {
@@ -60,7 +60,7 @@
         "dropout": [0.0, 0.2, 0.4, 0.6, 0.8],
         "bias": [false, true],
         "act": [null, "tanh", "relu"],
-        "sample": [null, "hypernodes", "hyperedges"],
+        "sample": ["hypernodes", "hyperedges"],
         "batch_size": [8388608, 16777216, 33554432]
     },
     "UniGCN": {
@@ -70,7 +70,7 @@
         "hyperedge_aggr": ["sum", "mean"],
         "bias": [false, true],
         "act": [null, "tanh", "relu"],
-        "sample": [null, "hypernodes", "hyperedges"],
+        "sample": ["hypernodes", "hyperedges"],
         "batch_size": [8388608, 16777216, 33554432]
     },
     "UniGAT": {
@@ -80,7 +80,7 @@
         "hyperedge_aggr": ["sum", "mean"],
         "bias": [false, true],
         "act": [null, "tanh", "relu"],
-        "sample": [null, "hypernodes", "hyperedges"],
+        "sample": ["hypernodes", "hyperedges"],
         "batch_size": [8388608, 16777216, 33554432]
     },
     "UniGIN": {
@@ -90,7 +90,7 @@
         "hyperedge_aggr": ["sum", "mean"],
         "bias": [false, true],
         "act": [null, "tanh", "relu"],
-        "sample": [null, "hypernodes", "hyperedges"],
+        "sample": ["hypernodes", "hyperedges"],
         "batch_size": [8388608, 16777216, 33554432]
     },
     "UniSAGE": {
@@ -113,7 +113,7 @@
         "hyperedge_aggr": ["sum", "mean"],
         "bias": [false, true],
         "act": [null, "tanh", "relu"],
-        "sample": [null, "hypernodes", "hyperedges"],
+        "sample": ["hypernodes", "hyperedges"],
         "batch_size": [8388608, 16777216, 33554432]
     },
     "AllDeepSets": {
@@ -125,7 +125,7 @@
         "normalization": ["ln", "bn", "None"],
         "deepset_input_norm": [false, true],
         "GPR": [false, true],
-        "sample": [null, "hypernodes", "hyperedges"],
+        "sample": ["hypernodes", "hyperedges"],
         "batch_size": [8388608, 16777216, 33554432]
     },
     "HNHN": {
@@ -137,7 +137,7 @@
         "alpha": [0.0, 0.5, 1.0, 2.0],
         "beta": [0.0, 0.5, 1.0, 2.0],
         "act": [null, "tanh", "relu"],
-        "sample": [null, "hypernodes", "hyperedges"],
+        "sample": ["hypernodes", "hyperedges"],
         "batch_size": [8388608, 16777216, 33554432]
     },
     "HyperSAGE": {
