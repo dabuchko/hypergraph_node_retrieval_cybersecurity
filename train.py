@@ -513,6 +513,10 @@ def train_HGNN_batches(model: torch.nn.Module, hypergraph: Hypergraph, x: torch.
             preds = torch.zeros_like(hypergraph.y, device=device)
             for batch_hypernodes, batch_hyperedges, batch_hyperedge_index, batch_val_mask in dataloader:
                 kwargs = {}
+                if x is not None:
+                    kwargs["x"] = x[batch_hypernodes].to(device)
+                else:
+                    kwargs["batch_hypernodes"] = batch_hypernodes.to(device)
                 if model.supports_hyperedge_attr:
                     kwargs["hyperedge_attr"] = hyperedge_attr[batch_hyperedges].to(device)
                 if model.supports_hyperedge_weight:
