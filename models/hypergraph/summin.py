@@ -8,7 +8,7 @@ class SumMinConv(MessagePassing):
     """
     SumMin hypergraph neural network convolution.
     """
-    def __init__(self, in_channels: int, out_channels: int):
+    def __init__(self, in_channels: int, out_channels: int, track_running_stats: bool = False):
         """
         Initializes the SumMin convolution layer.
         
@@ -16,10 +16,15 @@ class SumMinConv(MessagePassing):
         :type in_channels: int
         :param out_channels: Number of output channels.
         :type out_channels: int
+        :param track_running_stats: A boolean value that when set to True, batch
+        normalization module tracks the running mean and variance, and when set to False,
+        batch normalization module does not track such statistics. If training
+        is performed without mini-batches, False is recommended. (default: False)
+        :type track_running_stats: bool
         """
         super().__init__("min", aggr_kwargs=None, flow="source_to_target", node_dim=-2, decomposed_layers=1)
         self.hyperedge_aggr = HyperedgeAggregation("sum")
-        self.bn = torch.nn.BatchNorm1d(in_channels, track_running_stats=False)
+        self.bn = torch.nn.BatchNorm1d(in_channels, track_running_stats=track_running_stats)
         self.bn.bias.data.fill_(1)
         self.relu = torch.nn.ReLU(inplace=True)
         self.lin = torch.nn.Linear(in_channels, out_channels)
@@ -62,7 +67,7 @@ class SumMin(BasicHGNN):
 
     def __init__(self, in_channels: int, hidden_channels: int, num_layers: int,
                  out_channels: int = None, dropout: float = 0.0, num_nodes: int = None,
-                 **kwargs):
+                 track_running_stats: bool = False, **kwargs):
         """
         Initializes the SumMin model.
         
@@ -79,9 +84,14 @@ class SumMin(BasicHGNN):
         :param num_nodes: The number of hypernodes in the hypergraph. If not provided,
         deduced from hyperedge_index at the first forward pass. (default: None)
         :type num_nodes: int
+        :param track_running_stats: A boolean value that when set to True, batch
+        normalization module tracks the running mean and variance, and when set to False,
+        batch normalization module does not track such statistics. If training
+        is performed without mini-batches, False is recommended. (default: False)
+        :type track_running_stats: bool
         :param kwargs: The remaining parameters to be passed to the parent BasicHGNN class.
         """
-        super().__init__(in_channels, hidden_channels, num_layers, out_channels, dropout, None, **kwargs)
+        super().__init__(in_channels, hidden_channels, num_layers, out_channels, dropout, None, track_running_stats=track_running_stats, **kwargs)
         if num_nodes is not None:
             self.x = torch.nn.Parameter(torch.empty((num_nodes, in_channels)))
             torch.nn.init.xavier_uniform_(self.x)
@@ -110,8 +120,8 @@ class SumMin(BasicHGNN):
             x = self.x[batch_hypernodes]
         return super().forward(x, hyperedge_index)
 
-    def init_conv(self, in_channels: int, out_channels: int):
-        return SumMinConv(in_channels, out_channels)
+    def init_conv(self, in_channels: int, out_channels: int, track_running_stats: bool = False):
+        return SumMinConv(in_channels, out_channels, track_running_stats)
 
 
 class SumMinAblation(BasicHGNN):
@@ -124,7 +134,8 @@ class SumMinAblation(BasicHGNN):
     supports_hyperedge_attr = False
 
     def __init__(self, in_channels: int, hidden_channels: int, num_layers: int,
-                 out_channels: int = None, dropout: float = 0.0, **kwargs):
+                 out_channels: int = None, dropout: float = 0.0,
+                 track_running_stats: bool = False, **kwargs):
         """
         Initializes the SumMin model.
         
@@ -138,9 +149,14 @@ class SumMinAblation(BasicHGNN):
         :type out_channels: int
         :param dropout: The dropout rate that is applied between convolutional layers. (default: 0.0)
         :type dropout: float
+        :param track_running_stats: A boolean value that when set to True, batch
+        normalization module tracks the running mean and variance, and when set to False,
+        batch normalization module does not track such statistics. If training
+        is performed without mini-batches, False is recommended. (default: False)
+        :type track_running_stats: bool
         :param kwargs: The remaining parameters to be passed to the parent BasicHGNN class.
         """
-        super().__init__(in_channels, hidden_channels, num_layers, out_channels, dropout, None, **kwargs)
+        super().__init__(in_channels, hidden_channels, num_layers, out_channels, dropout, None, track_running_stats=track_running_stats, **kwargs)
         self.mlp = torch.nn.Sequential(
             torch.nn.Linear(in_channels, in_channels),
             torch.nn.Tanh(),
@@ -159,6 +175,6 @@ class SumMinAblation(BasicHGNN):
         """
         return super().forward(self.mlp(x), hyperedge_index)
 
-    def init_conv(self, in_channels: int, out_channels: int):
-        return SumMinConv(in_channels, out_channels)
+    def init_conv(self, in_channels: int, out_channels: int, track_running_stats: bool = False):
+        return SumMinConv(in_channels, out_channels, track_running_stats)
     

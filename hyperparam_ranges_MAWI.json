@@ -154,6 +154,7 @@
         "hidden_channels": [8, 16],
         "num_layers": [1, 2, 3, 4],
         "dropout": [0.0, 0.2, 0.4, 0.6, 0.8],
+        "track_running_stats": [true],
         "sample": ["hyperedges"],
         "batch_size": [8388608, 16777216, 33554432]
     },
@@ -161,6 +162,7 @@
         "hidden_channels": [8, 16],
         "num_layers": [1, 2, 3, 4],
         "dropout": [0.0, 0.2, 0.4, 0.6, 0.8],
+        "track_running_stats": [true],
         "sample": ["hyperedges"],
         "batch_size": [8388608, 16777216, 33554432]
     }
