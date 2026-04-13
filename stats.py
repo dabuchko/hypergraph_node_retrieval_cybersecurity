@@ -2,8 +2,6 @@
 import torch
 from data import *
 import argparse
-import networkx as nx
-import igraph
 
 parser = argparse.ArgumentParser()
 parser.add_argument("dataset", choices=DATASETS.keys(), help="Hypergraph dataset " \
