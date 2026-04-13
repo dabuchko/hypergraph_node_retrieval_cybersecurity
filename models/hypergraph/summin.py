@@ -52,7 +52,11 @@ class SumMinConv(MessagePassing):
             num_edges = int(hyperedge_index[1].max()) + 1
 
         out = self.hyperedge_aggr(x, hyperedge_index, (num_nodes, num_edges))
-        out = self.bn(out)
+        if out.shape[0]>1:
+            out = self.bn(out)
+        else:
+            # do not update running mean and variance if only one sample is provided
+            out = torch.nn.functional.batch_norm(out, self.bn.running_mean, self.bn.running_var, self.bn.weight, self.bn.bias)
         out = self.relu(out)
         out = self.propagate(hyperedge_index.flip([0]), x=out, size=(num_edges, num_nodes))
         out.add_(x)
