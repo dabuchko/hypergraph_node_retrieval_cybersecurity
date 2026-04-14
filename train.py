@@ -512,7 +512,7 @@ def train_HGNN_batches(model: torch.nn.Module, hypergraph: Hypergraph, x: torch.
             loss = torch.tensor(0.0, device=device)
             preds = torch.zeros_like(hypergraph.y, device=device)
             for batch_hypernodes, batch_hyperedges, batch_hyperedge_index, batch_val_mask in dataloader:
-                kwargs = {}
+                kwargs = {"hyperedge_index": batch_hyperedge_index.to(device)}
                 if x is not None:
                     kwargs["x"] = x[batch_hypernodes].to(device)
                 else:
@@ -521,7 +521,7 @@ def train_HGNN_batches(model: torch.nn.Module, hypergraph: Hypergraph, x: torch.
                     kwargs["hyperedge_attr"] = hyperedge_attr[batch_hyperedges].to(device)
                 if model.supports_hyperedge_weight:
                     kwargs["hyperedge_weight"] = hypergraph.hyperedge_weight[batch_hyperedges].to(device)
-                batch_preds = model(x[batch_hypernodes].to(device), batch_hyperedge_index.to(device), **kwargs)
+                batch_preds = model(**kwargs)
                 if batch_val_mask.sum()!=0:
                     loss += loss_fn(batch_preds[batch_val_mask.to(device)], hypergraph.y[batch_hypernodes][batch_val_mask].to(device))
                 preds[batch_hypernodes] = batch_preds
