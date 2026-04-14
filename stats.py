@@ -11,8 +11,54 @@ parser.add_argument("--seed", default=42, type=int, help="Random seed for datase
 parser.add_argument("--arguments", default={}, type=dict, help="Dictionary of dataset arguments.")
 
 def main(dataset: Hypergraph) -> None:
-    # print straightforward properties: node number, number of edges,
-    # malicious node number, benign node number
+    print(f"Number of nodes: {dataset.num_nodes}")
+    print(f"Number of edges: {dataset.num_edges}")
+    print(f"Number of incident connections: {dataset.hyperedge_index.shape[1]}")
+    if dataset.y != None:
+        mal_num = (dataset.y==1).sum()
+        ben_num = (dataset.y==0).sum()
+        print(f"Number of malicious nodes: {mal_num} ({mal_num/dataset.num_nodes*100:.4f}%)")
+        print(f"Number of benign nodes: {ben_num} ({ben_num/dataset.num_nodes*100:.4f}%)")
+
+    # compute and print the number of empty and simple edges by iterating over
+    # hyperedges indices
+    empty_edges = set(range(dataset.num_edges))
+    simple_edges = set()
+    for i in range(dataset.hyperedge_index.shape[1]):
+        hyperedge = int(dataset.hyperedge_index[1, i].item())
+        if hyperedge in empty_edges:
+            empty_edges.remove(hyperedge)
+            simple_edges.add(hyperedge)
+        elif hyperedge in simple_edges:
+            simple_edges.remove(hyperedge)
+    print(f"Number of empty hyperedges: {len(empty_edges)}")
+    print(f"Number of simple hyperedges: {len(simple_edges)}")
+    del empty_edges
+    
+    # compute the number of isolated nodes. Isolated are all nodes that do not
+    # belong to some non-simple hyperedge
+    isolated_nodes = set(range(dataset.num_nodes))
+    for i in range(dataset.hyperedge_index.shape[1]):
+        node = int(dataset.hyperedge_index[0, i].item())
+        if node not in isolated_nodes:
+            continue
+        hyperedge = int(dataset.hyperedge_index[1, i].item())
+        if hyperedge not in simple_edges:
+            isolated_nodes.remove(node)
+
+    print(f"Number of isolated nodes: {len(isolated_nodes)}")
+
+    # compute hypernode degree, hyperedge degree, and hyperedge weight statistics
+    node_degrees = torch.bincount(dataset.hyperedge_index[0]).float()
+    print(f"Hypernode degree: median {node_degrees.median()}, mean {node_degrees.mean()}, standard deviation {node_degrees.std()}, maximum {node_degrees.max()}, minimum {node_degrees.min()}")
+    hyperedge_degrees = torch.bincount(dataset.hyperedge_index[1]).float()
+    print(f"Hyperedge degree: median {hyperedge_degrees.median()}, mean {hyperedge_degrees.mean()}, standard deviation {hyperedge_degrees.std()}, maximum {hyperedge_degrees.max()}, minimum {hyperedge_degrees.min()}")
+    if dataset.hyperedge_weight is not None:
+        he_float_weight = dataset.hyperedge_weight.float()
+        print(f"Hyperedge weight: median {he_float_weight.median()}, mean {he_float_weight.mean()}, standard deviation {he_float_weight.std()}, maximum {he_float_weight.max()}, minimum {he_float_weight.min()}")
+    
+    # compute what fraction of incidence matrix is filled with entry bigger than 0
+    print(f"Hypergraph density: {dataset.hyperedge_index.shape[1] * 100 / (dataset.num_nodes * dataset.num_edges):.4f}%")
 
     # count number of the connected components
     hyperedge_index = dataset.hyperedge_index[:, torch.argsort(dataset.hyperedge_index[0])]
