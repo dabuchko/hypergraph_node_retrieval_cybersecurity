@@ -7,6 +7,29 @@
     "Trainable Embeddings": {
         "dim": [32]
     },
+    "Node2Vec": {
+        "embedding_dim": [32],
+        "walk_length": [8],
+        "context_size": [4],
+        "walks_per_node": [16],
+        "p": [1.0],
+        "q": [1.0],
+        "num_negative_samples": [16],
+        "batch_size": [4096]
+    },
+    "Logistic Regression": {
+        "C": [0.001, 0.01, 0.1, 1.0, 10, 100, 1000]
+    },
+    "MLP": {
+        "hidden_layer_sizes": [[8], [8, 2], [8, 3], [16], [16, 2], [16, 3], [32], [32, 2], [32, 3]],
+        "alpha": [0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1, 1.0, 10.0]
+    },
+    "Naive Bayes": {},
+    "KNN": {
+        "n_neighbors": [5, 7],
+        "weights": ["uniform", "distance"],
+        "metric": ["cosine", "l1", "l2"]
+    },
     "GCN": {
         "hidden_channels": [32],
         "num_layers": [2],
