@@ -12,8 +12,8 @@
         "walk_length": [8],
         "context_size": [4],
         "walks_per_node": [16],
-        "p": [1.0],
-        "q": [1.0],
+        "p": [0.25, 0.5, 1.0, 2.0, 4.0],
+        "q": [0.25, 0.5, 1.0, 2.0, 4.0],
         "num_negative_samples": [16],
         "batch_size": [4096]
     },
