@@ -35,7 +35,7 @@
         "num_layers": [2],
         "dropout": [0.0],
         "num_neighbors": [32],
-        "batch_size": [16777216]
+        "batch_size": [8388608]
     },
     "GAT": {
         "hidden_channels": [16],
@@ -44,14 +44,14 @@
         "heads": [1],
         "add_self_loops": [true],
         "num_neighbors": [32],
-        "batch_size": [16777216]
+        "batch_size": [8388608]
     },
     "GIN": {
         "hidden_channels": [16],
         "num_layers": [2],
         "dropout": [0.0],
         "num_neighbors": [32],
-        "batch_size": [16777216]
+        "batch_size": [8388608]
     },
     "GraphSAGE": {
         "hidden_channels": [16],
@@ -59,7 +59,7 @@
         "dropout": [0.0],
         "aggr": ["mean", "max"],
         "num_neighbors": [32],
-        "batch_size": [16777216]
+        "batch_size": [8388608]
     },
     "Label Propagation": {
         "num_layers": [1, 2, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
@@ -75,7 +75,7 @@
         "bias": [true],
         "act": ["relu"],
         "sample": ["hypernodes", "hyperedges"],
-        "batch_size": [16777216]
+        "batch_size": [8388608]
     },
     "HCHA": {
         "num_layers": [1, 2],
@@ -84,7 +84,7 @@
         "bias": [true],
         "act": ["relu"],
         "sample": ["hypernodes", "hyperedges"],
-        "batch_size": [16777216]
+        "batch_size": [8388608]
     },
     "UniGCN": {
         "hidden_channels": [16],
@@ -94,7 +94,7 @@
         "bias": [true],
         "act": ["relu"],
         "sample": ["hypernodes", "hyperedges"],
-        "batch_size": [16777216]
+        "batch_size": [8388608]
     },
     "UniGAT": {
         "hidden_channels": [16],
@@ -104,7 +104,7 @@
         "bias": [true],
         "act": ["relu"],
         "sample": ["hypernodes", "hyperedges"],
-        "batch_size": [16777216]
+        "batch_size": [8388608]
     },
     "UniGIN": {
         "hidden_channels": [16],
@@ -114,7 +114,7 @@
         "bias": [true],
         "act": ["relu"],
         "sample": ["hypernodes", "hyperedges"],
-        "batch_size": [16777216]
+        "batch_size": [8388608]
     },
     "UniSAGE": {
         "hidden_channels": [16],
@@ -125,7 +125,7 @@
         "bias": [true],
         "act": ["relu"],
         "sample": ["hypernodes", "hyperedges"],
-        "batch_size": [16777216]
+        "batch_size": [8388608]
     },
     "UniGCNII": {
         "hidden_channels": [16],
@@ -137,7 +137,7 @@
         "bias": [true],
         "act": ["relu"],
         "sample": ["hypernodes", "hyperedges"],
-        "batch_size": [16777216]
+        "batch_size": [8388608]
     },
     "AllDeepSets": {
         "hidden_channels": [16],
@@ -149,7 +149,7 @@
         "deepset_input_norm": [true],
         "GPR": [true],
         "sample": ["hypernodes", "hyperedges"],
-        "batch_size": [16777216]
+        "batch_size": [8388608]
     },
     "HNHN": {
         "hidden_channels": [16],
@@ -161,7 +161,7 @@
         "beta": [0.0, 0.5, 1.0],
         "act": ["relu"],
         "sample": ["hypernodes", "hyperedges"],
-        "batch_size": [16777216]
+        "batch_size": [8388608]
     },
     "HyperSAGE": {
         "hidden_channels": [16],
@@ -170,7 +170,7 @@
         "dropout": [0.0],
         "act": ["relu"],
         "sample": ["hypernodes"],
-        "batch_size": [16777216]
+        "batch_size": [8388608]
     },
     "SumMin": {
         "in_channels": [16],
@@ -179,7 +179,7 @@
         "dropout": [0.0],
         "track_running_stats": [true],
         "sample": ["hyperedges"],
-        "batch_size": [16777216]
+        "batch_size": [8388608]
     },
     "SumMinAblation": {
         "hidden_channels": [16],
@@ -187,6 +187,6 @@
         "dropout": [0.0],
         "track_running_stats": [true],
         "sample": ["hyperedges"],
-        "batch_size": [16777216]
+        "batch_size": [8388608]
     }
 }
