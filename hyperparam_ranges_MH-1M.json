@@ -2,26 +2,26 @@
     "Random Gaussian": {
         "mean": [0],
         "std": [1],
-        "dim": [16]
+        "dim": [8]
     },
     "Trainable Embeddings": {
-        "dim": [16]
+        "dim": [8]
     },
     "Node2Vec": {
-        "embedding_dim": [16],
+        "embedding_dim": [8],
         "walk_length": [8],
         "context_size": [4],
-        "walks_per_node": [16],
+        "walks_per_node": [8],
         "p": [0.25, 0.5, 1.0, 2.0, 4.0],
         "q": [0.25, 0.5, 1.0, 2.0, 4.0],
-        "num_negative_samples": [16],
+        "num_negative_samples": [8],
         "batch_size": [4096]
     },
     "Logistic Regression": {
         "C": [0.001, 0.01, 0.1, 1.0, 10, 100, 1000]
     },
     "MLP": {
-        "hidden_layer_sizes": [[8], [8, 2], [8, 3], [16], [16, 2], [16, 3]],
+        "hidden_layer_sizes": [[8], [8, 2], [8, 3], [8], [16, 2], [16, 3]],
         "alpha": [0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1, 1.0, 10.0]
     },
     "Naive Bayes": {},
@@ -31,14 +31,14 @@
         "metric": ["cosine", "l1", "l2"]
     },
     "GCN": {
-        "hidden_channels": [16],
+        "hidden_channels": [8],
         "num_layers": [2],
         "dropout": [0.0],
         "num_neighbors": [32],
         "batch_size": [8388608]
     },
     "GAT": {
-        "hidden_channels": [16],
+        "hidden_channels": [8],
         "num_layers": [2],
         "dropout": [0.0],
         "heads": [1],
@@ -47,14 +47,14 @@
         "batch_size": [8388608]
     },
     "GIN": {
-        "hidden_channels": [16],
+        "hidden_channels": [8],
         "num_layers": [2],
         "dropout": [0.0],
         "num_neighbors": [32],
         "batch_size": [8388608]
     },
     "GraphSAGE": {
-        "hidden_channels": [16],
+        "hidden_channels": [8],
         "num_layers": [2],
         "dropout": [0.0],
         "aggr": ["mean", "max"],
@@ -69,7 +69,7 @@
         "num_layers": [1, 2, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
     },
     "HGNN": {
-        "hidden_channels": [16],
+        "hidden_channels": [8],
         "num_layers": [1, 2],
         "dropout": [0.0],
         "bias": [true],
@@ -87,7 +87,7 @@
         "batch_size": [8388608]
     },
     "UniGCN": {
-        "hidden_channels": [16],
+        "hidden_channels": [8],
         "num_layers": [1, 2],
         "dropout": [0.0],
         "hyperedge_aggr": ["sum", "mean"],
@@ -97,7 +97,7 @@
         "batch_size": [8388608]
     },
     "UniGAT": {
-        "hidden_channels": [16],
+        "hidden_channels": [8],
         "num_layers": [1, 2],
         "dropout": [0.0],
         "hyperedge_aggr": ["sum", "mean"],
@@ -107,7 +107,7 @@
         "batch_size": [8388608]
     },
     "UniGIN": {
-        "hidden_channels": [16],
+        "hidden_channels": [8],
         "num_layers": [1, 2],
         "dropout": [0.0],
         "hyperedge_aggr": ["sum", "mean"],
@@ -117,7 +117,7 @@
         "batch_size": [8388608]
     },
     "UniSAGE": {
-        "hidden_channels": [16],
+        "hidden_channels": [8],
         "num_layers": [1, 2],
         "dropout": [0.0],
         "sage_aggr": ["mean", "max"],
@@ -128,7 +128,7 @@
         "batch_size": [8388608]
     },
     "UniGCNII": {
-        "hidden_channels": [16],
+        "hidden_channels": [8],
         "alpha": [0.0],
         "beta": [0.5],
         "num_layers": [1, 2],
@@ -140,10 +140,10 @@
         "batch_size": [8388608]
     },
     "AllDeepSets": {
-        "hidden_channels": [16],
+        "hidden_channels": [8],
         "num_layers": [1, 2],
         "dropout": [0.0],
-        "classifier_hidden": [16],
+        "classifier_hidden": [8],
         "classifier_num_layers": [1, 2],
         "normalization": ["bn"],
         "deepset_input_norm": [true],
@@ -152,7 +152,7 @@
         "batch_size": [8388608]
     },
     "HNHN": {
-        "hidden_channels": [16],
+        "hidden_channels": [8],
         "num_layers": [1, 2],
         "dropout": [0.0],
         "heads": [1],
@@ -164,7 +164,7 @@
         "batch_size": [8388608]
     },
     "HyperSAGE": {
-        "hidden_channels": [16],
+        "hidden_channels": [8],
         "p": [-1, 0.01, 0.5, 1.0, 2.0],
         "num_layers": [1, 2],
         "dropout": [0.0],
@@ -173,8 +173,8 @@
         "batch_size": [8388608]
     },
     "SumMin": {
-        "in_channels": [16],
-        "hidden_channels": [16],
+        "in_channels": [8],
+        "hidden_channels": [8],
         "num_layers": [1, 2],
         "dropout": [0.0],
         "track_running_stats": [true],
@@ -182,7 +182,7 @@
         "batch_size": [8388608]
     },
     "SumMinAblation": {
-        "hidden_channels": [16],
+        "hidden_channels": [8],
         "num_layers": [1, 2],
         "dropout": [0.0],
         "track_running_stats": [true],
