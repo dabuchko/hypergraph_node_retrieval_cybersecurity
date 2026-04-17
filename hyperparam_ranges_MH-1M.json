@@ -151,6 +151,20 @@
         "sample": ["hypernodes", "hyperedges"],
         "batch_size": [8388608]
     },
+    "AllSetTransformer": {
+        "hidden_channels": [8],
+        "num_layers": [1, 2],
+        "dropout": [0.0, 0.2, 0.4, 0.6, 0.8],
+        "classifier_hidden": [8],
+        "classifier_num_layers": [1, 2],
+        "aggregate": ["sum", "mean"],
+        "normalization": ["bn"],
+        "deepset_input_norm": [true],
+        "GPR": [true],
+        "heads": [1],
+        "sample": ["hypernodes", "hyperedges"],
+        "batch_size": [8388608]
+    },
     "HNHN": {
         "hidden_channels": [8],
         "num_layers": [1, 2],
