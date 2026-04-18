@@ -9,12 +9,12 @@
     },
     "Node2Vec": {
         "embedding_dim": [8],
-        "walk_length": [8],
-        "context_size": [4],
-        "walks_per_node": [8],
+        "walk_length": [6],
+        "context_size": [3],
+        "walks_per_node": [4],
         "p": [0.25, 0.5, 1.0, 2.0, 4.0],
         "q": [0.25, 0.5, 1.0, 2.0, 4.0],
-        "num_negative_samples": [8],
+        "num_negative_samples": [16],
         "batch_size": [4096]
     },
     "Logistic Regression": {
