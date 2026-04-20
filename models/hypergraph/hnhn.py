@@ -10,6 +10,9 @@ class HNHNConv(MessagePassing):
     HNHN convolution layer as described in:
     HNHN: Hypergraph Networks with Hyperedge Neurons
     https://arxiv.org/abs/2006.12278
+
+    With slight modifications, the implementation is copied from:
+    https://github.com/jianhao2016/AllSet/blob/main/src/layers.py
     """
     def __init__(self, in_channels: int, hidden_channels: int, out_channels: int,
                  heads: int = 1, nonlinear_inbetween: bool = True, alpha: float = 1.0,
