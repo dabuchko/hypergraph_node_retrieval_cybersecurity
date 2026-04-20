@@ -99,7 +99,6 @@ def train_GNN(model: torch.nn.Module, graph: torch_geometric.data.Data, x: torch
     parameters = model.parameters()
     if isinstance(x, torch.nn.Parameter):
         parameters = chain(parameters, [x])
-    breakpoint()
     optimizer = torch.optim.Adam(parameters, 0.01)
 
     # verify the data format, fix existing data, and add missing data
