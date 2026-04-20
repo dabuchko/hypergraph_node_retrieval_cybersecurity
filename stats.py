@@ -77,12 +77,13 @@ def main(dataset: Hypergraph) -> None:
     print(f"Number of connected components: {num_of_conn_comp}")
 
     # compute statistics of number of hypernodes across components
-    hypernode_labels_values = hypernode_labels.unique()
-    hypernode_new_indexes = torch.empty((dataset.num_nodes,), dtype=torch.long) # reindex labels to avoid components of 0 size
-    hypernode_new_indexes[hypernode_labels_values] = torch.arange(hypernode_labels_values.shape[0])
-    hypernode_labels = hypernode_new_indexes[hypernode_labels]
-    components_stat = torch.bincount(hypernode_labels).float()
-    print(f"Number of hypernodes in component: median {components_stat.median()}, mean {components_stat.mean()}, standard deviation {components_stat.std()}, maximum {components_stat.max()}, minimum {components_stat.min()}")
+    if num_of_conn_comp>1:
+        hypernode_labels_values = hypernode_labels.unique()
+        hypernode_new_indexes = torch.empty((dataset.num_nodes,), dtype=torch.long) # reindex labels to avoid components of 0 size
+        hypernode_new_indexes[hypernode_labels_values] = torch.arange(hypernode_labels_values.shape[0])
+        hypernode_labels = hypernode_new_indexes[hypernode_labels]
+        components_stat = torch.bincount(hypernode_labels).float()
+        print(f"Number of hypernodes in component: median {components_stat.median()}, mean {components_stat.mean()}, standard deviation {components_stat.std()}, maximum {components_stat.max()}, minimum {components_stat.min()}")
 
 if __name__ == "__main__":
     args = parser.parse_args([] if "__file__" not in globals() else None)
