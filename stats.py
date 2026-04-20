@@ -11,16 +11,16 @@ parser.add_argument("--seed", default=42, type=int, help="Random seed for datase
 parser.add_argument("--arguments", default={}, type=dict, help="Dictionary of dataset arguments.")
 
 def main(dataset: Hypergraph) -> None:
-    print(f"Number of nodes: {dataset.num_nodes}")
-    print(f"Number of edges: {dataset.num_edges}")
+    print(f"Number of hypernodes: {dataset.num_nodes}")
+    print(f"Number of hyperedges: {dataset.num_edges}")
     print(f"Number of incident connections: {dataset.hyperedge_index.shape[1]}")
     if dataset.y != None:
         mal_num = (dataset.y==1).sum()
         ben_num = (dataset.y==0).sum()
-        print(f"Number of malicious nodes: {mal_num} ({mal_num/dataset.num_nodes*100:.4f}%)")
-        print(f"Number of benign nodes: {ben_num} ({ben_num/dataset.num_nodes*100:.4f}%)")
+        print(f"Number of malicious hypernodes: {mal_num} ({mal_num/dataset.num_nodes*100:.4f}%)")
+        print(f"Number of benign hypernodes: {ben_num} ({ben_num/dataset.num_nodes*100:.4f}%)")
 
-    # compute and print the number of empty and simple edges by iterating over
+    # compute and print the number of empty and simple hyperedges by iterating over
     # hyperedges indices
     empty_edges = set(range(dataset.num_edges))
     simple_edges = set()
@@ -35,7 +35,7 @@ def main(dataset: Hypergraph) -> None:
     print(f"Number of simple hyperedges: {len(simple_edges)}")
     del empty_edges
     
-    # compute the number of isolated nodes. Isolated are all nodes that do not
+    # compute the number of isolated hypernodes. Isolated are all hypernodes that do not
     # belong to some non-simple hyperedge
     isolated_nodes = set(range(dataset.num_nodes))
     for i in range(dataset.hyperedge_index.shape[1]):
@@ -46,7 +46,7 @@ def main(dataset: Hypergraph) -> None:
         if hyperedge not in simple_edges:
             isolated_nodes.remove(node)
 
-    print(f"Number of isolated nodes: {len(isolated_nodes)}")
+    print(f"Number of isolated hypernodes: {len(isolated_nodes)}")
 
     # compute hypernode degree, hyperedge degree, and hyperedge weight statistics
     node_degrees = torch.bincount(dataset.hyperedge_index[0]).float()
