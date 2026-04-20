@@ -48,8 +48,8 @@ def validate_and_preprocess_graph(graph: torch_geometric.data.Data) -> torch_geo
     :return: Initially passed graph with necessary modifications.
     :rtype: torch_geometric.data.Data
     """
-    if not isinstance(graph, torch_geometric.data.Data) or graph.x==None or graph.edge_index==None or graph.y==None:
-        assert "Graph component must be a torch_geometric.data.Data object with attributes: x, edge_index, and y."
+    if not isinstance(graph, torch_geometric.data.Data) or graph.edge_index==None or graph.y==None:
+        assert "Graph component must be a torch_geometric.data.Data object with attributes: edge_index and y."
     if len(graph.y.shape)>=2 and graph.y.shape[1]!=1:
         assert "The current function was designed for binary classes only."
     if graph.edge_weight==None:
@@ -97,8 +97,9 @@ def train_GNN(model: torch.nn.Module, graph: torch_geometric.data.Data, x: torch
     current_patience = patience
     loss_fn = torch.nn.BCEWithLogitsLoss(weight)
     parameters = model.parameters()
-    if isinstance(graph.x, torch.nn.Parameter):
+    if isinstance(x, torch.nn.Parameter):
         parameters = chain(parameters, [x])
+    breakpoint()
     optimizer = torch.optim.Adam(parameters, 0.01)
 
     # verify the data format, fix existing data, and add missing data
