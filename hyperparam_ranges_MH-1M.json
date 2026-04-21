@@ -154,7 +154,7 @@
     "AllSetTransformer": {
         "hidden_channels": [8],
         "num_layers": [1, 2],
-        "dropout": [0.0, 0.2, 0.4, 0.6, 0.8],
+        "dropout": [0.0],
         "classifier_hidden": [8],
         "classifier_num_layers": [1, 2],
         "aggregate": ["sum", "mean"],
