@@ -95,7 +95,7 @@ def train_GNN(model: torch.nn.Module, graph: torch_geometric.data.Data, x: torch
     model.to(device)
     last_loss = float("inf")
     current_patience = patience
-    loss_fn = torch.nn.BCEWithLogitsLoss(weight)
+    loss_fn = torch.nn.BCEWithLogitsLoss(pos_weight=weight)
     parameters = model.parameters()
     if isinstance(x, torch.nn.Parameter):
         parameters = chain(parameters, [x])
@@ -168,7 +168,7 @@ def train_GNN_batches(model: torch.nn.Module, graph: torch_geometric.data.Data,
     model.to(device)
     last_loss = float("inf")
     current_patience = patience
-    loss_fn = torch.nn.BCEWithLogitsLoss(weight)
+    loss_fn = torch.nn.BCEWithLogitsLoss(pos_weight=weight)
     parameters = model.parameters()
     if isinstance(x, torch.nn.Parameter):
         parameters = chain(parameters, [x])
@@ -274,7 +274,7 @@ def train_HGNN(model: torch.nn.Module, hypergraph: Hypergraph, x: torch.Tensor,
     model.to(device)
     last_loss = float("inf")
     current_patience = patience
-    loss_fn = torch.nn.BCEWithLogitsLoss(weight)
+    loss_fn = torch.nn.BCEWithLogitsLoss(pos_weight=weight)
     parameters = model.parameters()
     if isinstance(x, torch.nn.Parameter):
         parameters = chain(parameters, [x])
@@ -469,7 +469,7 @@ def train_HGNN_batches(model: torch.nn.Module, hypergraph: Hypergraph, x: torch.
     model.to(device)
     last_loss = float("inf")
     current_patience = patience
-    loss_fn = torch.nn.BCEWithLogitsLoss(weight)
+    loss_fn = torch.nn.BCEWithLogitsLoss(pos_weight=weight)
     parameters = model.parameters()
     if isinstance(x, torch.nn.Parameter):
         parameters = chain(parameters, [x])
