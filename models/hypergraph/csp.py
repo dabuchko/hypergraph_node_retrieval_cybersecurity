@@ -1,16 +1,25 @@
-from torch import Tensor, ones
-from .basic_hgnn import BasicHGNN
-from torch_geometric.nn.conv import MessagePassing
+from torch import Tensor
+from torch.nn import Module
 from torch_geometric.utils import scatter
 
-class CSPConv(MessagePassing):
+class CSP(Module):
     """
-    CSP convolutional layer as described in:
+    CSP model as described in:
     CSP: An Efficient Baseline for Learning on Large-Scale Structured Data
     https://arxiv.org/pdf/2409.17628
     """
-    def __init__(self):
-        super().__init__("mean", aggr_kwargs=None, flow="source_to_target", node_dim=-2, decomposed_layers=1)
+    supports_hyperedge_weight = False
+    supports_hyperedge_attr = False
+    def __init__(self, num_layers: int):
+        """
+        Initializes CSP model.
+        
+        :param num_layers: Number of layers in the model.
+        :type num_layers: int
+        """
+        super().__init__()
+        self.num_layers = num_layers
+
     def forward(self, x: Tensor, hyperedge_index: Tensor):
         """
         Forward pass of CSP convolutional layer.
@@ -28,27 +37,8 @@ class CSPConv(MessagePassing):
         num_edges = 0
         if hyperedge_index.numel() > 0:
             num_edges = int(hyperedge_index[1].max()) + 1
-
-        out = self.propagate(hyperedge_index, x=x, size=(num_nodes, num_edges))
-        out = self.propagate(hyperedge_index.flip([0]), x=out, size=(num_edges, num_nodes))
-        return out
-
-class CSP(BasicHGNN):
-    """
-    CSP model as described in:
-    CSP: An Efficient Baseline for Learning on Large-Scale Structured Data
-    https://arxiv.org/pdf/2409.17628
-    """
-    supports_hyperedge_weight = False
-    supports_hyperedge_attr = False
-    def __init__(self, num_layers: int):
-        """
-        Initializes CSP model.
         
-        :param num_layers: Number of layers in the model.
-        :type num_layers: int
-        """
-        super().__init__(1, 1, num_layers, 1)
-
-    def init_conv(self, _: int, __: int, **kwargs):
-        return CSPConv()
+        for _ in range(self.num_layers):
+            x = scatter(x[hyperedge_index[0]], hyperedge_index[1], dim=0, dim_size=num_edges, reduce="mean")
+            x = scatter(x[hyperedge_index[1]], hyperedge_index[0], dim=0, dim_size=num_nodes, reduce="mean")
+        return x
