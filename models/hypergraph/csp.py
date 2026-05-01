@@ -24,7 +24,7 @@ class CSP(Module):
         """
         Forward pass of CSP convolutional layer.
         
-        :param x: Feature matrix of shape [num_nodes, num_features].
+        :param x: Label matrix of shape [num_nodes, num_classes].
         :type x: Tensor
         :param hyperedge_index: The hyperedge indices of shape [2, num_hyperedges],
         where the first row contains hypernode indices and the second -- hyperedge indices.

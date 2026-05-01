@@ -2,7 +2,7 @@
 Models module containing implementations of embedding, feature-based, graph-based, and hypergraph models. 
 """
 
-from torch_geometric.nn.models import GCN, GIN, GAT, GraphSAGE, Node2Vec, LabelPropagation
+from torch_geometric.nn.models import GCN, GIN, GAT, GraphSAGE, Node2Vec
 from .embedding.random_gaussian import RandomGaussian
 from .embedding.random_uniform import XavierUniform
 from .embedding.trainable_embeddings_wrapper import trainable_embeddings_wrapper
@@ -21,6 +21,7 @@ from .hypergraph.hgnn import HGNN
 from .hypergraph.csp import CSP
 from .hypergraph.summin import SumMin, SumMinAblation
 from .hypergraph.hypersage import HyperSAGE
+from .graph.label_propagation import LabelPropagation
 
 __all__ = ["EMBEDDING_METHODS", "FEATURE_METHODS", "HYPERGRAPH_METHODS", "GRAPH_METHODS", "RandomGaussian",
            "MatrixFactorization", "SpectralEmbedding", "SpectralEmbeddingUnnormalized", "SpectralEmbeddingSideNorm",
