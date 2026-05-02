@@ -9,10 +9,15 @@ in hypergraphs in cybersecurity. Hypernodes and hyperedges in hypergraphs do not
 have any features, so training and inference should be based solely on the relational
 structure. The data is usually imbalanced, e.g. malicious entities are highly
 underrepresented and majority of entities belong to benign class. For this reason
-primarily PR AUC (Average Precision) metric is used for evaluation and multiple
+primarily PR-AUC (Average Precision) metric is used for evaluation and multiple
 imbalance handling strategies are adopted.
 
-The following datasets were used in the experiments:
+The implementation of SumMin method proposed in the thesis is located at
+[models/hypergraph/summin.py](./models/hypergraph/summin.py).
+
+## Datasets
+
+The following datasets are available for experiments in this repository:
 
 * Private **CiscoEmail** dataset - this is a private hypergraph email dataset
 extracted from the emails of Cisco Systems Inc. clients.
@@ -30,7 +35,7 @@ represented by the corresponding hypernode has the corresponding n-gram in its t
 Hyperedge weights are assigned based on the number of grams represented by the corresponding
 hyperedge.
 
-Original dataset source: https://huggingface.co/datasets/talby/spamassassin
+    Original dataset source: https://huggingface.co/datasets/talby/spamassassin
 
 * Hypergraph representation of **BCCC-VulSCs-2023** dataset consists of 36,670 Solidity Smart Contracts.
 Each hypernode represents a source code file of the contract, and each hyperedge represents an n-gram
@@ -39,7 +44,7 @@ Hyperedge weight is defined as the number of tokens in the n-gram. Since by defi
 hypergraph cannot contain duplicated hyperedges, similar hyperedges were merged together
 by summing their weights.
 
-Original dataset source: https://www.kaggle.com/datasets/bcccdatasets/bccc-vulscs-2023
+    Original dataset source: https://www.kaggle.com/datasets/bcccdatasets/bccc-vulscs-2023
 
 * Hypergraph representation of **MH-1M** dataset consists of Android applications that are
 classified among two classes: malicious and benign. In this hypergraph, hypernodes
@@ -48,9 +53,9 @@ represent Android applications, and hyperedges represent their shared attributes
 to hyperedge if the Android application represented by the corresponding hypernode
 has a shared attribute represented by the corresponding hyperedge.
 
-Original dataset source: https://github.com/Malware-Hunter/MH-1M
+    Original dataset source: https://github.com/Malware-Hunter/MH-1M
 
-Hypergraph representation source: https://www.kaggle.com/datasets/dbuchko/mh-1m-dataset-hypergraph-representation
+    Hypergraph representation source: https://www.kaggle.com/datasets/dbuchko/mh-1m-dataset-hypergraph-representation
 
 * Hypergraph representation of **MAWI** dataset consists of 24 hour trace at the
 transit link of Widely Integrated Distributed Environment (WIDE) to the upstream ISP.
@@ -61,9 +66,9 @@ a connection during 24 hour captured trace. Each hypernode belongs to either of 
 classes: malicious host or benign host. Malicious hosts are identified based on the
 public lists of malicious ip addresses.
 
-Original dataset source: https://mawi.wide.ad.jp/mawi/ditl/ditl2025/
+    Original dataset source: https://mawi.wide.ad.jp/mawi/ditl/ditl2025/
 
-Hypergraph representation source: https://www.kaggle.com/datasets/dbuchko/mawi-hypergraph-09042025
+    Hypergraph representation source: https://www.kaggle.com/datasets/dbuchko/mawi-hypergraph-09042025
 
 The experiments conducted on these datasets are described further in this document in individual sections.
 SpamAssassin dataset was excluded from the experiments because trivial methods can easily

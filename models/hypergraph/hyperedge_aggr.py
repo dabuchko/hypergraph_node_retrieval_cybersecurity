@@ -6,7 +6,7 @@ from torch_geometric.typing import Size
 
 class HyperedgeAggregation(MessagePassing):
     """
-    Aggregation layer for hyperedges. It aggregates node features to hyperedge features based on the provided aggregation method.
+    Aggregation layer for hyperedges. It aggregates hypernode features to obtain hyperedge features based on the provided aggregation method.
     """
     def __init__(self, aggr: Optional[Union[str, List[str], Aggregation]] = "mean", **kwargs):
         """
