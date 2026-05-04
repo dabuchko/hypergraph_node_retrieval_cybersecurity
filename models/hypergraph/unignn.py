@@ -143,8 +143,6 @@ class UniGATConv(MessagePassing):
         step = 3000
         for i in range(0, hyperedge_index.shape[1], step):
             res += scatter(att[i:i+step][:, None] * out[hyperedge_index[1,i:i+step]], hyperedge_index[0, i:i+step], dim=0, dim_size=num_nodes, reduce='sum')
-        if (res!=res).sum().item()>0:
-            breakpoint()
         return res
 
 class UniGAT(BasicHGNN):
